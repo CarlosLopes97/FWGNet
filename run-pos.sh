@@ -3,9 +3,6 @@
 rd="pcap"
 # rd="xml"
 app_protocol=$1
-# app_protocol="http"
-# app_protocol="ftp"
-# app_protocol="udp"
 
 # dir_tr_file="Results/Traces/"${app_protocol}"_eth-myapp-py.pcap-0-0.${rd}"
 dir_tr_file="Results/Traces/"${app_protocol}"_wifi-myapp-py.pcap-0-0.${rd}"

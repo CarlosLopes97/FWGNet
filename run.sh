@@ -25,9 +25,9 @@ cmd="true"
 # app_protocol="tcp"
 # app_protocol="udp"
 # app_protocol="http"
-app_protocol="ftp"
+# app_protocol="ftp"
 # app_protocol="hls"
-# app_protocol="802_11"
+app_protocol="802_11"
 
 # Definindo se o tamanho dos pacotes é constante ou não
 size_const="True"
@@ -40,7 +40,7 @@ run=1
 # declare -a mt_RG=("PD" "ecdf" "tcdf")
 declare -a mt_RG=("ecdf")
 # "99.80%";"99.85%";"99.90%";"99.95%";"99.99%"
-IC="99.95"
+IC="95.0"
 
 # Definindo diretório do arquivo trace a ser utilizado pela simulação
 if [[ $app_protocol = "tcp" ]]

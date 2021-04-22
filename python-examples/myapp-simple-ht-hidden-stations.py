@@ -596,10 +596,10 @@ def ksvalid(size, Dobs):
     
     D_critico = 0
     rejects = ""
-    IC = IC+"%"
-    # print(IC)
+    IC = str(IC)+"%"
+    print("IC: ", IC)
     if (size<=35):
-        ks_df = pd.read_csv("../../../WGNet/kstest.txt", sep=";")
+        ks_df = pd.read_csv("../../../FWGNet/kstest.txt", sep=";")
         # ks_df = ks_df[ks_df['Size'].str.contains(""+size+"")]
         # print(ks_df)
         D_critico = ks_df[""+IC+""].iloc[size-1]
@@ -610,11 +610,11 @@ def ksvalid(size, Dobs):
             D_critico = 1.07/np.sqrt(size)
         if IC == "99.85%":
             D_critico = 1.14/np.sqrt(size)
-        if IC == "99.90%":
+        if IC == "90.0%":
             D_critico = 1.224/np.sqrt(size)
-        if IC == "99.95%":
+        if IC == "95.0%":
             D_critico = 1.358/np.sqrt(size)
-        if IC == "99.99%":
+        if IC == "99.0%":
             D_critico = 1.628/np.sqrt(size)
     
 
@@ -629,6 +629,7 @@ def ksvalid(size, Dobs):
     
     # IC = IC[:-1]
     IC = IC.replace('%', '')
+    # print("IC: ", IC)
     return rejects, float(IC), D_critico
     
 # Função para definir a distribuição de probabilidade compatível com os 
@@ -2017,9 +2018,9 @@ def print_stats(w, st, flow_id, proto, t, lost_packets, throughput, delay, jitte
     global mt_RG
     global t_net
     if flow_id == 1:
-        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+".txt", "w")
+        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "w")
     else: 
-        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+".txt", "a")
+        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
 
     w.write("\n  FlowID: "+ str(flow_id)+"\n")
     w.write("  Protocol: " + str(proto)+"\n")
@@ -2119,6 +2120,7 @@ def compare(app_protocol):
     global const_Size
     global t_net
     global mt_RG
+    global IC
     # global time_ns3
     # global size_ns3
 
@@ -2549,8 +2551,8 @@ def compare(app_protocol):
                     if plot == "save":
                         plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
                         plt.close()
+                
                 if meth == "kstest":  
-
                     x_ks = x
                     y_ks = y
                     
@@ -2730,39 +2732,20 @@ def compare(app_protocol):
                             if p_value < a:
                                 print("Reject - p-value: ", p_value, " is less wich alpha: ", a," (2samp)")
                             else:
-                                print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
-                            
-
-                            w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+".txt", "a")
-                            w.write("\nKS TEST("+str(app)+")_"+alt+"_"+md+":"+"\n")
-                            w.write("Confidence degree: "+ str(IC)+"%\n")
-                            w.write("D observed: "+ str(Dobs)+"\n")
-                            w.write("D observed(two samples): "+ str(ks_statistic)+"\n")
-                            w.write("D critical: "+str(D_critico)+"\n")
-                            w.write(str(rejects)+ " to  Real Trace (Manual-ks_statistic/D_critico)\n")
-                            
-                            if p_value < a:
-                                w.write("Reject - p-value: "+ str(p_value)+ " is less wich alpha: "+ str(a)+" (2samp)\n")
-                            else:
                                 w.write("Fails to Reject - p-value: "+ str(p_value)+ " is greater wich alpha: "+ str(a)+" (2samp)\n")
+                                # Plotando resultados do teste KS
+                                plt.plot(Ft, Fe, '-', label='Simulated trace data')
+                                plt.plot(t_Fe, Fe, '-', label='Real trace data')
+                                # Definindo titulo
+                                # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
+                                plt.legend(loc='lower right',fontsize=12)
+                                if plot == "show":
+                                    plt.show()  
+                                if plot == "save":
+                                    plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
+                                    plt.close()
                             w.close()
-                            # Gerar número aleatório de acordo com a distribuição escolhida e seus parametros.
-                            
-                            # Plotando resultados do teste KS
-                            plt.plot(Ft, Fe, '-', label='Simulated trace data')
-                            plt.plot(t_Fe, Fe, '-', label='Real trace data')
-                            
-                            
-                            # plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
-                            # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
-                            # Definindo titulo
-                            # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
-                            plt.legend(loc='lower right',fontsize=12)
-                            if plot == "show":
-                                plt.show()  
-                            if plot == "save":
-                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
-                                plt.close()
+                    
                     
 
 
@@ -3495,7 +3478,7 @@ def main(argv):
             allNodes.Get(0).AddApplication(app1)
 
             app1.SetStartTime(ns.core.Seconds(0.01))
-            # app1.SetStopTime(ns.core.Seconds(timeStopSimulation))
+            app1.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
             ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, app1)
 
@@ -3722,7 +3705,7 @@ def main(argv):
                 app[i].SetStartTime(ns.core.Seconds(0.0))
                 # Término da aplicação
                 app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
-            # ns.core.Simulator.Schedule(ns.core.Seconds(3), IncRate, app, ns3.DataRate(dataRate))
+            ns.core.Simulator.Schedule(ns.core.Seconds(3), IncRate, app, ns3.DataRate(dataRate))
 
     if (app_protocol == "hls"):
         if validation == "True":
@@ -3971,7 +3954,7 @@ def main(argv):
                 app[i].SetStartTime(ns.core.Seconds(0.0))
                 # Término da aplicação
                 app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
-            # ns.core.Simulator.Schedule(ns.core.Seconds(3), IncRate, app, ns3.DataRate(dataRate))
+            ns.core.Simulator.Schedule(ns.core.Seconds(3), IncRate, app, ns3.DataRate(dataRate))
 
 
 
@@ -4022,11 +4005,11 @@ def main(argv):
     # print("Mean delay", m_delay)
 
     if run <= 1:
-        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+".txt", "w")
+        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "w")
         w.write('"n_Run";"Lost_Packets";"Throughput";"Delay";"Jitter"\n')
         
     else:
-        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+".txt", "a")
+        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "a")
     
     w.write('"'+str(run) + '";"' + str(m_lost_packets) + '";"' + str(m_throughput) + '";"' + str(m_delay) + '";"' + str(m_jitter)+'"\n')
     w.close()
@@ -4104,9 +4087,9 @@ def main(argv):
 
 
     if (mt_RG == "tcdf" or mt_RG == "ecdf") and validation == "True":
-        # os.system("cd ../../../WGNet/")
-        os.system("sudo  chmod 777 ../../../WGNet/run-pos.sh")
-        os.system("sudo bash ./../../../WGNet/run-pos.sh "+app_protocol)
+        # os.system("cd ../../../FWGNet/")
+        os.system("sudo  chmod 777 ../../../FWGNet/run-pos.sh")
+        os.system("sudo bash ./../../../FWGNet/run-pos.sh "+app_protocol)
         compare(app_protocol)
 
     

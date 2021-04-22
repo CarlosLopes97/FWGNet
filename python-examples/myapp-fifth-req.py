@@ -48,7 +48,6 @@ import ns.point_to_point
 import ns3 
 
 import pandas as pd
-import pandas as pd
 import numpy as np
 import scipy
 from sklearn.preprocessing import StandardScaler
@@ -483,8 +482,8 @@ def read_txt(parameter, traffic, app_protocol):
 
 
 cont = 0
-first_req = True
-first_resp = True
+first_req = True 
+first_resp = True 
 first_send = True 
 y_req = 0
 y_resp = 0
@@ -596,10 +595,10 @@ def ksvalid(size, Dobs):
     
     D_critico = 0
     rejects = ""
-    IC = IC+"%"
-    # print(IC)
+    IC = str(IC)+"%"
+    # print("IC: ", IC)
     if (size<=35):
-        ks_df = pd.read_csv("../../../WGNet/kstest.txt", sep=";")
+        ks_df = pd.read_csv("../../../FWGNet/kstest.txt", sep=";")
         # ks_df = ks_df[ks_df['Size'].str.contains(""+size+"")]
         # print(ks_df)
         D_critico = ks_df[""+IC+""].iloc[size-1]
@@ -610,11 +609,11 @@ def ksvalid(size, Dobs):
             D_critico = 1.07/np.sqrt(size)
         if IC == "99.85%":
             D_critico = 1.14/np.sqrt(size)
-        if IC == "99.90%":
+        if IC == "90.0%":
             D_critico = 1.224/np.sqrt(size)
-        if IC == "99.95%":
+        if IC == "95.0%":
             D_critico = 1.358/np.sqrt(size)
-        if IC == "99.99%":
+        if IC == "99.0%":
             D_critico = 1.628/np.sqrt(size)
     
 
@@ -629,6 +628,7 @@ def ksvalid(size, Dobs):
     
     # IC = IC[:-1]
     IC = IC.replace('%', '')
+    # print("IC: ", IC)
     return rejects, float(IC), D_critico
     
 # Função para definir a distribuição de probabilidade compatível com os 
@@ -1985,7 +1985,7 @@ class MyApp(ns3.Application):
         self.count_GetTypeId = self.count_GetTypeId + 1
         return self.tid
 
-# Função de definição da janela de congestionamento
+# # Função de definição da janela de congestionamento
 def CwndChange(app):
 	# CwndChange(): 
 	# n = app.GetSendPacket()
@@ -2010,9 +2010,9 @@ def print_stats(w, st, flow_id, proto, t, lost_packets, throughput, delay, jitte
     global mt_RG
     global t_net
     if flow_id == 1:
-        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+".txt", "w")
+        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "w")
     else: 
-        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+".txt", "a")
+        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
 
     w.write("\n  FlowID: "+ str(flow_id)+"\n")
     w.write("  Protocol: " + str(proto)+"\n")
@@ -2111,6 +2111,7 @@ def compare(app_protocol):
     global plot
     global const_Size
     global t_net
+    global IC
     # global time_ns3
     # global size_ns3
 
@@ -2725,7 +2726,7 @@ def compare(app_protocol):
                                 print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
                             
 
-                            w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+".txt", "a")
+                            w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
                             w.write("\nKS TEST("+str(app)+")_"+alt+"_"+md+":"+"\n")
                             w.write("Confidence degree: "+ str(IC)+"%\n")
                             w.write("D observed: "+ str(Dobs)+"\n")
@@ -2737,24 +2738,26 @@ def compare(app_protocol):
                                 w.write("Reject - p-value: "+ str(p_value)+ " is less wich alpha: "+ str(a)+" (2samp)\n")
                             else:
                                 w.write("Fails to Reject - p-value: "+ str(p_value)+ " is greater wich alpha: "+ str(a)+" (2samp)\n")
+                                # Plotando resultados do teste KS
+                                plt.plot(Ft, Fe, '-', label='Simulated trace data')
+                                plt.plot(t_Fe, Fe, '-', label='Real trace data')
+                                # Definindo titulo
+                                # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
+                                plt.legend(loc='lower right',fontsize=12)
+                                if plot == "show":
+                                    plt.show()  
+                                if plot == "save":
+                                    plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
+                                    plt.close()
                             w.close()
                             # Gerar número aleatório de acordo com a distribuição escolhida e seus parametros.
                             
-                            # Plotando resultados do teste KS
-                            plt.plot(Ft, Fe, '-', label='Simulated trace data')
-                            plt.plot(t_Fe, Fe, '-', label='Real trace data')
+                            
                             
                             
                             # plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
                             # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
-                            # Definindo titulo
-                            # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
-                            plt.legend(loc='lower right',fontsize=12)
-                            if plot == "show":
-                                plt.show()  
-                            if plot == "save":
-                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
-                                plt.close()
+                            
                     
 
 
@@ -2954,7 +2957,7 @@ def http_read(app_protocol):
     print(timeStopSimulation)
     nRequestPackets = len(time_req_df["Time"])
     nResponsePackets = len(time_resp_df["Time"])
-
+    
     return timeStopSimulation, nRequestPackets, nResponsePackets
         
 def ftp_read(app_protocol):
@@ -3096,17 +3099,17 @@ def main(argv):
     cmd.validation = "0"
     cmd.mt_RG = "0"
     # cmd.AddValue ("timeStopRequest", "Tempo final de requisições do cliente")
-    cmd.AddValue ("nRequestPackets", "Número de pacotes solicitados pelo cliente")
-    cmd.AddValue ("nResponsePackets", "Número de pacotes enviados pelo servidor")
-    cmd.AddValue ("nPackets", "Número de pacotes enviados pelo servidor")
-    cmd.AddValue ("timeStopSimulation", "Tempo final da simulação")
-    cmd.AddValue ("app_protocol", "Protocolo da aplicação")
-    cmd.AddValue ("const_Size", "Tipo do tamanho dos pacotes")
-    cmd.AddValue ("mt_const", "Tipo do valor constante")
-    cmd.AddValue ("validation", "Definição de comparação")
-    cmd.AddValue ("run", "Definição quantas vezes a simulação será executada")
-    cmd.AddValue ("mt_RG", "Tipo de gerador de carga utilizado")
-    cmd.AddValue ("IC", "Intervalo de Confiança do KSTest")
+    cmd.AddValue("nRequestPackets", "Número de pacotes solicitados pelo cliente")
+    cmd.AddValue("nResponsePackets", "Número de pacotes enviados pelo servidor")
+    cmd.AddValue("nPackets", "Número de pacotes enviados pelo servidor")
+    cmd.AddValue("timeStopSimulation", "Tempo final da simulação")
+    cmd.AddValue("app_protocol", "Protocolo da aplicação")
+    cmd.AddValue("const_Size", "Tipo do tamanho dos pacotes")
+    cmd.AddValue("mt_const", "Tipo do valor constante")
+    cmd.AddValue("validation", "Definição de comparação")
+    cmd.AddValue("run", "Definição quantas vezes a simulação será executada")
+    cmd.AddValue("mt_RG", "Tipo de gerador de carga utilizado")
+    cmd.AddValue("IC", "Intervalo de Confiança do KSTest")
     
     cmd.Parse (sys.argv)
     # Definindo a quantidade de pacotes
@@ -3247,7 +3250,7 @@ def main(argv):
             app.SetStartTime(ns.core.Seconds(0.0))
             app.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), RequestCwndChange, app)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, app)
 
             # Application Response
             sinkPort1 = 8081
@@ -3269,7 +3272,7 @@ def main(argv):
             app1.SetStartTime(ns.core.Seconds(0.001))
             app1.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, app1)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, app1)
         else:
             http_read(app_protocol)
 
@@ -3303,7 +3306,7 @@ def main(argv):
                 req_app[i].SetStartTime(ns.core.Seconds(0.0))
                 req_app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-                ns.core.Simulator.Schedule(ns.core.Seconds(0), RequestCwndChange, req_app[i])
+                ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, req_app[i])
             
             ################### Application Response #####################
             resp_sinkPort = 8081
@@ -3336,7 +3339,7 @@ def main(argv):
                 resp_app[i].SetStartTime(ns.core.Seconds(0.1))
                 resp_app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-                ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, resp_app[i])
+                ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, resp_app[i])
 
     if (app_protocol == "ftp"):
         if validation == "True":
@@ -3363,7 +3366,7 @@ def main(argv):
             app0.SetStartTime(ns.core.Seconds(0.0))
             app0.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), RequestCwndChange, app0)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, app0)
 
             # Application Response
             sinkPort1 = 8081
@@ -3385,7 +3388,7 @@ def main(argv):
             app1.SetStartTime(ns.core.Seconds(0.01))
             app1.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, app1)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, app1)
 
             
             # Application Send Files
@@ -3419,7 +3422,7 @@ def main(argv):
             app.SetStartTime(ns.core.Seconds(0.02))
             app.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), CwndChange, app)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), CwndChange, app)
         else:
             
             timeStopRequest, timeStopResponse = ftp_read(app_protocol)
@@ -3454,7 +3457,7 @@ def main(argv):
                 req_app[i].SetStartTime(ns.core.Seconds(0.0))
                 req_app[i].SetStopTime(ns.core.Seconds(timeStopRequest))
 
-                ns.core.Simulator.Schedule(ns.core.Seconds(0), RequestCwndChange, req_app[i])
+                ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, req_app[i])
             
             ################### Application Response #####################
             resp_sinkPort = 8081
@@ -3487,7 +3490,7 @@ def main(argv):
                 resp_app[i].SetStartTime(ns.core.Seconds(timeStopRequest))
                 resp_app[i].SetStopTime(ns.core.Seconds(timeStopResponse))
 
-                ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, resp_app[i])
+                ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, resp_app[i])
 
             ################# Application Send Files #################
             ################# Serve Application #################
@@ -3610,7 +3613,7 @@ def main(argv):
                 app[i].SetStartTime(ns.core.Seconds(0.0))
                 # Término da aplicação
                 app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
-            # ns.core.Simulator.Schedule(ns.core.Seconds(3), IncRate, app, ns3.DataRate(dataRate))
+            ns.core.Simulator.Schedule(ns.core.Seconds(3), IncRate, app, ns3.DataRate(dataRate))
 
     if (app_protocol == "hls"):
         if validation == "True":
@@ -3635,9 +3638,9 @@ def main(argv):
             nodes.Get(1).AddApplication(app0)
 
             app0.SetStartTime(ns.core.Seconds(0.0))
-            # app0.SetStopTime(ns.core.Seconds(timeStopSimulation))
+            app0.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), RequestCwndChange, app0)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, app0)
 
             # Application Response
             sinkPort1 = 8081
@@ -3657,9 +3660,9 @@ def main(argv):
             nodes.Get(0).AddApplication(app1)
 
             app1.SetStartTime(ns.core.Seconds(0.01))
-            # app1.SetStopTime(ns.core.Seconds(timeStopSimulation))
+            app1.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, app1)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, app1)
 
             
             # Application Send Files
@@ -3691,9 +3694,9 @@ def main(argv):
             nodes.Get(0).AddApplication(app)
 
             app.SetStartTime(ns.core.Seconds(0.02))
-            # app.SetStopTime(ns.core.Seconds(timeStopSimulation))
+            app.SetStopTime(ns.core.Seconds(timeStopSimulation))
 
-            ns.core.Simulator.Schedule(ns.core.Seconds(0), CwndChange, app)
+            ns.core.Simulator.Schedule(ns.core.Seconds(1), CwndChange, app)
         else:
             
             timeStopRequest, timeStopResponse = ftp_read(app_protocol)
@@ -3728,7 +3731,7 @@ def main(argv):
                 req_app[i].SetStartTime(ns.core.Seconds(0.0))
                 # req_app[i].SetStopTime(ns.core.Seconds(timeStopRequest))
 
-                ns.core.Simulator.Schedule(ns.core.Seconds(0), RequestCwndChange, req_app[i])
+                ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, req_app[i])
             
             ################### Application Response #####################
             resp_sinkPort = 8081
@@ -3761,7 +3764,7 @@ def main(argv):
                 resp_app[i].SetStartTime(ns.core.Seconds(timeStopRequest))
                 # resp_app[i].SetStopTime(ns.core.Seconds(timeStopResponse))
 
-                ns.core.Simulator.Schedule(ns.core.Seconds(0), ResponseCwndChange, resp_app[i])
+                ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, resp_app[i])
 
             ################# Application Send Files #################
             ################# Serve Application #################
@@ -3816,7 +3819,7 @@ def main(argv):
         csma.EnablePcapAll ("../../../Results/Traces/"+app_protocol+"_eth-myapp-py.pcap", True)
 
     # Controle de inicio e fim da simulação
-    # ns.core.Simulator.Stop(ns.core.Seconds(timeStopSimulation))
+    ns.core.Simulator.Stop(ns.core.Seconds(timeStopSimulation))
     ns.core.Simulator.Run()
     ns.core.Simulator.Destroy()
 
@@ -3850,11 +3853,11 @@ def main(argv):
     # print("Mean delay", m_delay)
 
     if run <= 1:
-        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+".txt", "w")
+        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "w")
         w.write('"n_Run";"Lost_Packets";"Throughput";"Delay";"Jitter"\n')
         
     else:
-        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+".txt", "a")
+        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "a")
     
     w.write('"'+str(run) + '";"' + str(m_lost_packets) + '";"' + str(m_throughput) + '";"' + str(m_delay) + '";"' + str(m_jitter)+'"\n')
     w.close()
@@ -3931,9 +3934,9 @@ def main(argv):
         plt.show()
 
     if (mt_RG == "tcdf" or mt_RG == "ecdf") and validation == "True":
-        # os.system("cd ../../../WGNet/")
-        os.system("sudo  chmod 777 ../../../WGNet/run-pos.sh")
-        os.system("sudo bash ./../../../WGNet/run-pos.sh "+app_protocol)
+        # os.system("cd ../../../FWGNet/")
+        os.system("sudo  chmod 777 ../../../FWGNet/run-pos.sh")
+        os.system("sudo bash ./../../../FWGNet/run-pos.sh "+app_protocol)
         compare(app_protocol)
 
 
