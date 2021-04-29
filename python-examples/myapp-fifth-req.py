@@ -157,6 +157,8 @@ first_resp_trace_time = 0
 aux_global_time = 0
 resp_aux_global_time = 0
 req_aux_global_time = 0
+
+printo = []
 # Função de leitura dos arquivos xml
 def read_xml(parameter):
     global size_xml
@@ -289,7 +291,7 @@ def read_txt(parameter, traffic, app_protocol):
         # t_time = sorted(t_time, reverse=True)
         # print("Trace Time: ", t_time[0:20])
         
-        # t_time = np.around(t_time, 5)
+        # t_time = np.around(t_time, 2)
         # print("t_time:", len(t_time))
 
 
@@ -527,7 +529,7 @@ def ecdf(y, parameter, traffic):
     
     if traffic == 'send':
         if first_send == True:
-            # y = np.around(y, 5)
+            # y = np.around(y, 2)
             # print("Original SEND: ", y)
             y_send = list(dict.fromkeys(y))
             y = y_send
@@ -581,6 +583,12 @@ def ecdf(y, parameter, traffic):
 
     if parameter == "Time":
         # print ("ECDF TIME: ", r_N)
+        r_N = np.around(r_N, 2)
+        w = open("../../../Results/Prints/ecdf_"+traffic+"_Time.txt", "a")
+
+        w.write("\n" + str(r_N) + "\n")
+        w.close()
+        # np.savetxt('scratch/'+'ecdf_'+app_protocol+'_time_req_ns3.txt', time_req_ns3, delimiter=',', fmt='%f')
         return(abs(r_N))
 
 def ksvalid(size, Dobs):
@@ -616,7 +624,7 @@ def ksvalid(size, Dobs):
         if IC == "99.0%":
             D_critico = 1.628/np.sqrt(size)
     
-
+    D_critico = np.around(D_critico, 2)
     # 0.20"	;	       "0.15"	;	 "0.10"	;	 "0.05"	;	     "0.01"
     # "1.07/sqrt(n)";"1.14/sqrt(n)";"1.22/sqrt(n)";"1.36/sqrt(n)";"1.63/sqrt(n)"
 
@@ -1498,7 +1506,7 @@ class ReqMyApp(ns3.Application):
                 if mt_RG == "ecdf":
                     # Chamando a função ecdf e retornando valor gerado para uma variável auxiliar
                     req_aux_global_time = ecdf(req_t_time, parameter, traffic)
-
+                    print("Time: ", req_aux_global_time)
             # Transformando a variávei auxiliar em um metadado de tempo 
             req_tNext = ns.core.Seconds(req_aux_global_time)
             # req_tNext = ns.core.Seconds(10)
@@ -1507,6 +1515,12 @@ class ReqMyApp(ns3.Application):
             global nRequests
             nRequests = nRequests + 1
             # self.m_sendEvent = ns.core.Simulator.Schedule(req_tNext, ReqMyApp.RequestSendPacket, self)
+            global printo
+            printo.append(req_tNext)
+            w = open("../../../Results/Prints/printo_ecdf_Time.txt", "a")
+
+            w.write("\n"+ str(req_aux_global_time)+"\n")
+            w.close()
             self.m_sendEvent = ns.core.Simulator.Schedule(req_tNext, ReqMyApp.RequestSendPacket, self)
 
     def GetSendRequestPacket(self):
@@ -2186,6 +2200,7 @@ def compare(app_protocol):
         time_req_ns3 = np.delete(time_req_ns3, np.where(time_req_ns3 == 0))
         time_req_ns3.sort()
         
+        
 
         if const_Size == "False":
             size_req_ns3 = np.array(req_df['Size'])
@@ -2193,7 +2208,8 @@ def compare(app_protocol):
 
             size_resp_ns3 = np.array(req_df['Size'])
             size_resp_ns3 = np.delete(size_resp_ns3, np.where(size_resp_ns3 == 0))
-
+        # time_req_ns3 = np.around(time_req_ns3, 3)
+        np.savetxt('scratch/'+'compare_'+app_protocol+'_time_req_ns3.txt', time_req_ns3, delimiter=',', fmt='%f')
         del req_df
         del resp_df          
         
@@ -2280,8 +2296,7 @@ def compare(app_protocol):
         del req_df
         del resp_df
         del send_df
-            
-            
+         
    
     # Definindo o parametro da rede a ser comparado
     if const_Size == "False":
@@ -2664,8 +2679,8 @@ def compare(app_protocol):
 
                     Fe = np.around(Fe,  3)
                     Fe_ = np.around(Fe_,  3)
-                    Ft = np.around(Ft,  3)
-                    t_Fe = np.around(t_Fe,  3)
+                    Ft = np.around(Ft,  5)
+                    t_Fe = np.around(t_Fe,  5)
 
 
                     # print("Ft: ", Ft[0:10])
@@ -2693,12 +2708,26 @@ def compare(app_protocol):
                     # Ft.sort()
                     print("Ft: ",len(Ft))
                     print("t_Fe: ",len(t_Fe))
-                    mode = ['auto','asymp','exact']
-                    alternative = ['two-sided', 'less', 'greater']
+                    
+                    t_Fe = np.around(t_Fe, 2)
+                    Ft = np.around(Ft, 2)
+
+                    np.savetxt("scratch/ALT_simulated_trace.txt", t_Fe, delimiter=',', fmt='%f')
+                    np.savetxt("scratch/ALT_real_trace.txt", Ft, delimiter=',', fmt='%f')
+                    
+                    
+                    
+                    
+                    # Modos disponíveis ['asymp','exact', 'auto']
+                    mode = ['exact']
+                    # Alternativas disponíveis ['two-sided', 'less', 'greater']
+                    alternative = ['less']
                     for md in mode:
                         for alt in alternative:
                             # if size < 10000:
                             ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode=''+md+'', alternative=''+alt+'')
+                            ks_statistic = np.around(ks_statistic, 2)
+                            p_value = np.around(p_value, 2)
                             # else:
                             #     ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode='asymp', alternative='two-sided')
                                 
@@ -2718,7 +2747,7 @@ def compare(app_protocol):
 
                             a = 1-(IC/100)
                             
-                            a = np.around(a,4)
+                            a = np.around(a,5)
 
                             if p_value < a:
                                 print("Reject - p-value: ", p_value, " is less wich alpha: ", a," (2samp)")
@@ -2738,26 +2767,38 @@ def compare(app_protocol):
                                 w.write("Reject - p-value: "+ str(p_value)+ " is less wich alpha: "+ str(a)+" (2samp)\n")
                             else:
                                 w.write("Fails to Reject - p-value: "+ str(p_value)+ " is greater wich alpha: "+ str(a)+" (2samp)\n")
-                                # Plotando resultados do teste KS
-                                plt.plot(Ft, Fe, '-', label='Simulated trace data')
-                                plt.plot(t_Fe, Fe, '-', label='Real trace data')
-                                # Definindo titulo
-                                # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
-                                plt.legend(loc='lower right',fontsize=12)
-                                if plot == "show":
-                                    plt.show()  
-                                if plot == "save":
-                                    plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
-                                    plt.close()
                             w.close()
                             # Gerar número aleatório de acordo com a distribuição escolhida e seus parametros.
                             
-                            
+                            # Plotando resultados do teste KS
+                    
+                            plt.plot(Ft, Fe, '-', label='Simulated trace data')
+                            plt.plot(t_Fe, Fe, '-', label='Real trace data')
                             
                             
                             # plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
                             # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
+                            # Definindo titulo
+                            # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
+                            plt.legend(loc='lower right',fontsize=12)
+                            if plot == "show":
+                                plt.show()  
+                            if plot == "save":
+                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
+                                plt.close()
                             
+                            # Definindo diferença entre traces
+                            diff = Ft - t_Fe
+                            fig, ax = plt.subplots(1, 1)
+                            ax = sns.distplot(diff)
+                            # plt.title("Histogram of differential "+traffic+" ("+parameter+")")
+                            
+                            # plt.hist(diff)
+                            if plot == "show":
+                                plt.show()  
+                            if plot == "save":
+                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_hist_"+parameter, fmt="png",dpi=1000)
+                                plt.close()
                     
 
 
@@ -2949,7 +2990,8 @@ def http_read(app_protocol):
 
         size_resp_df = ns3_df[ns3_df['req_resp'].str.contains("HTTP/1.1")]
         # size_resp_df["Size"] = size_resp_df["Size"].apply(pd.to_numeric)
-
+        size_req_df.round(5)
+        size_resp_df.round(5)
         np.savetxt('scratch/'+app_protocol+'_req_size.txt', size_req_df["Size"], delimiter=',', fmt='%f')
         np.savetxt('scratch/'+app_protocol+'_resp_size.txt', size_resp_df["Size"], delimiter=',', fmt='%f')
     
@@ -3893,10 +3935,10 @@ def main(argv):
         Jitter.append(ecdf_df['Jitter'].mean())
         Jitter.append(pd_df['Jitter'].mean())
 
-        Lost_Packets = np.around(Lost_Packets,  6)
-        Throughput = np.around(Throughput,  6)
-        Delay = np.around(Delay,  6)
-        Jitter = np.around(Jitter,  6)
+        Lost_Packets = np.around(Lost_Packets,  2)
+        Throughput = np.around(Throughput,  2)
+        Delay = np.around(Delay,  2)
+        Jitter = np.around(Jitter,  2)
 
         labels = ["PD","ecdf","tcdf"]
 

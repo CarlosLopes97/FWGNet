@@ -2702,12 +2702,25 @@ def compare(app_protocol):
                     # Ft.sort()
                     print("Ft: ",len(Ft))
                     print("t_Fe: ",len(t_Fe))
-                    mode = ['auto','asymp','exact']
-                    alternative = ['two-sided', 'less', 'greater']
+                    t_Fe = np.around(t_Fe, 2)
+                    Ft = np.around(Ft, 2)
+
+                    np.savetxt("scratch/ALT_simulated_trace.txt", t_Fe, delimiter=',', fmt='%f')
+                    np.savetxt("scratch/ALT_real_trace.txt", Ft, delimiter=',', fmt='%f')
+                    
+                    
+                    
+                    
+                    # Modos disponíveis ['asymp','exact', 'auto']
+                    mode = ['exact']
+                    # Alternativas disponíveis ['two-sided', 'less', 'greater']
+                    alternative = ['less']
                     for md in mode:
                         for alt in alternative:
                             # if size < 10000:
                             ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode=''+md+'', alternative=''+alt+'')
+                            ks_statistic = np.around(ks_statistic, 2)
+                            p_value = np.around(p_value, 2)
                             # else:
                             #     ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode='asymp', alternative='two-sided')
                                 
@@ -2727,25 +2740,58 @@ def compare(app_protocol):
 
                             a = 1-(IC/100)
                             
-                            a = np.around(a,4)
+                            a = np.around(a,5)
 
                             if p_value < a:
                                 print("Reject - p-value: ", p_value, " is less wich alpha: ", a," (2samp)")
                             else:
+                                print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
+                            
+
+                            w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
+                            w.write("\nKS TEST("+str(app)+")_"+alt+"_"+md+":"+"\n")
+                            w.write("Confidence degree: "+ str(IC)+"%\n")
+                            w.write("D observed: "+ str(Dobs)+"\n")
+                            w.write("D observed(two samples): "+ str(ks_statistic)+"\n")
+                            w.write("D critical: "+str(D_critico)+"\n")
+                            w.write(str(rejects)+ " to  Real Trace (Manual-ks_statistic/D_critico)\n")
+                            
+                            if p_value < a:
+                                w.write("Reject - p-value: "+ str(p_value)+ " is less wich alpha: "+ str(a)+" (2samp)\n")
+                            else:
                                 w.write("Fails to Reject - p-value: "+ str(p_value)+ " is greater wich alpha: "+ str(a)+" (2samp)\n")
-                                # Plotando resultados do teste KS
-                                plt.plot(Ft, Fe, '-', label='Simulated trace data')
-                                plt.plot(t_Fe, Fe, '-', label='Real trace data')
-                                # Definindo titulo
-                                # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
-                                plt.legend(loc='lower right',fontsize=12)
-                                if plot == "show":
-                                    plt.show()  
-                                if plot == "save":
-                                    plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
-                                    plt.close()
                             w.close()
+                            # Gerar número aleatório de acordo com a distribuição escolhida e seus parametros.
+                            
+                            # Plotando resultados do teste KS
                     
+                            plt.plot(Ft, Fe, '-', label='Simulated trace data')
+                            plt.plot(t_Fe, Fe, '-', label='Real trace data')
+                            
+                            
+                            # plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
+                            # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
+                            # Definindo titulo
+                            # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
+                            plt.legend(loc='lower right',fontsize=12)
+                            if plot == "show":
+                                plt.show()  
+                            if plot == "save":
+                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
+                                plt.close()
+                            
+                            # Definindo diferença entre traces
+                            diff = Ft - t_Fe
+                            fig, ax = plt.subplots(1, 1)
+                            ax = sns.distplot(diff)
+                            # plt.title("Histogram of differential "+traffic+" ("+parameter+")")
+                            
+                            # plt.hist(diff)
+                            if plot == "show":
+                                plt.show()  
+                            if plot == "save":
+                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_hist_"+parameter, fmt="png",dpi=1000)
+                                plt.close()
                     
 
 
