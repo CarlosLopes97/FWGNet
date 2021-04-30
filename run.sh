@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Diretório do arquivo do NS3
 
-file="myapp-simple-ht-hidden-stations.py"
-# file="myapp-fifth-req.py"
+# file="myapp-simple-ht-hidden-stations.py"
+file="myapp-fifth-req.py"
 
 # file="myapp-fifth.py"
 # file="tcp-bulk-send.py"
@@ -24,21 +24,23 @@ cmd="true"
 # Definindo o protocolo de comunicação a ser realizado
 # app_protocol="tcp"
 # app_protocol="udp"
-# app_protocol="http"
+app_protocol="http"
 # app_protocol="ftp"
 # app_protocol="hls"
-app_protocol="802_11"
+# app_protocol="802_11"
 
 # Definindo se o tamanho dos pacotes é constante ou não
 size_const="True"
 mt_const="Value"
 # mt_const="Trace"
-# validation="False"
-validation="True"
+validation="False"
+# validation="True"
 run=1
+
 # Declare an array of string with type
 # declare -a mt_RG=("PD" "ecdf" "tcdf")
 declare -a mt_RG=("ecdf")
+
 # "99.80%";"99.85%";"99.90%";"99.95%";"99.99%"
 IC="95.0"
 
@@ -53,8 +55,8 @@ then
 fi
 if [[ $app_protocol = "http" ]]
 then
-    # dir_tr_file="Traces/Case-Study-1/http-p2p.${rd}"
     dir_tr_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-1/small-tcp-http.${rd}"
+    # dir_tr_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-1/http-p2p.${rd}"
 fi
 if [[ $app_protocol = "ftp" ]]
 then

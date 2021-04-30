@@ -290,7 +290,7 @@ def read_txt(parameter, traffic, app_protocol):
         # t_time = sorted(t_time, reverse=True)
         # print("Trace Time: ", t_time[0:20])
         
-        # t_time = np.around(t_time, 5)
+        # t_time = np.around(t_time , 2)
         # print("t_time:", len(t_time))
 
 
@@ -504,7 +504,7 @@ def ecdf(y, parameter, traffic):
     
     if traffic == 'request':
         if first_req == True:
-            # y = np.around(y, 4)
+            # y = np.around(y, 2)
             # print("Original REQ: ", y)
             y_req = list(dict.fromkeys(y))
             y = y_req
@@ -516,7 +516,7 @@ def ecdf(y, parameter, traffic):
 
     if traffic == 'response':
         if first_resp == True:
-            # y = np.around(y, 4)
+            # y = np.around(y, 2)
             # print("Original RESP: ", y)
             y_resp = list(dict.fromkeys(y))
             y = y_resp
@@ -528,7 +528,7 @@ def ecdf(y, parameter, traffic):
     
     if traffic == 'send':
         if first_send == True:
-            # y = np.around(y, 5)
+            # y = np.around(y , 2)
             # print("Original SEND: ", y)
             y_send = list(dict.fromkeys(y))
             y = y_send
@@ -2348,7 +2348,7 @@ def compare(app_protocol):
                     # print("X around: ", len(x))
                     # Adicionando valores do trace
                     y = t_time
-                    # y = np.around(y, 4)
+                    # y = np.around(y, 2)
                     # print("Original SEND: ", y)
                     # y = list(dict.fromkeys(y))
                     # print("Y arround: ",len(y))
@@ -2671,10 +2671,10 @@ def compare(app_protocol):
                     Ft = np.array(Ft)
                     t_Fe = np.array(t_Fe)
 
-                    Fe = np.around(Fe,  3)
-                    Fe_ = np.around(Fe_,  3)
-                    Ft = np.around(Ft,  3)
-                    t_Fe = np.around(t_Fe,  3)
+                    Fe = np.around(Fe,  2)
+                    Fe_ = np.around(Fe_,  2)
+                    Ft = np.around(Ft,  2)
+                    t_Fe = np.around(t_Fe,  2)
 
 
                     # print("Ft: ", Ft[0:10])
@@ -4091,10 +4091,10 @@ def main(argv):
         Jitter.append(ecdf_df['Jitter'].mean())
         Jitter.append(pd_df['Jitter'].mean())
 
-        Lost_Packets = np.around(Lost_Packets,  6)
-        Throughput = np.around(Throughput,  6)
-        Delay = np.around(Delay,  6)
-        Jitter = np.around(Jitter,  6)
+        Lost_Packets = np.around(Lost_Packets,  2)
+        Throughput = np.around(Throughput,  2)
+        Delay = np.around(Delay,  2)
+        Jitter = np.around(Jitter,  2)
 
         labels = ["PD","ecdf","tcdf"]
 

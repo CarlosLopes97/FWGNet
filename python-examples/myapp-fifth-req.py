@@ -304,7 +304,7 @@ def read_txt(parameter, traffic, app_protocol):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
+                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
         
 
@@ -334,7 +334,7 @@ def read_txt(parameter, traffic, app_protocol):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
+                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
         # Definindo que o parametro time pode ser lido apenas uma vez.
         first_trace_size = 1 
@@ -370,7 +370,7 @@ def read_txt(parameter, traffic, app_protocol):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
+                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
         # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
         # req_t_time_df = pd.DataFrame(req_t_time, columns=['Time'])
@@ -399,7 +399,7 @@ def read_txt(parameter, traffic, app_protocol):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
+                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
         
 
@@ -441,7 +441,7 @@ def read_txt(parameter, traffic, app_protocol):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
+                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
 
         # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
@@ -472,7 +472,7 @@ def read_txt(parameter, traffic, app_protocol):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
+                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
 
         # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
@@ -760,7 +760,7 @@ def tcdf(y, parameter, traffic):
         
         # Imprimindo resultados do KS Test
         print(" ")
-        print("KS TEST(",app,"):")
+        print("KS TEST:")
         print("Confidence degree: ", IC,"%")
         print("D observed: ", Dobs)
         print("D observed(two samples): ", ks_statistic)
@@ -948,7 +948,7 @@ def tcdf(y, parameter, traffic):
         if plot == "show":
             plt.show()
         if plot == "save":
-            plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_hist_tcdf_"+traffic+"_"+dist_name+"_"+parameter, fmt="png",dpi=1000)
+            plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_tcdf_"+traffic+"_"+dist_name+"_"+parameter, fmt="png",dpi=1000)
             plt.close()
     # Armazenar parâmetros de distribuição em um quadro de dados (isso também pode ser salvo)
     dist_parameters = pd.DataFrame()
@@ -1038,7 +1038,7 @@ def tcdf(y, parameter, traffic):
         
         # Imprimindo resultados do KS Test
         print(" ")
-        print("KS TEST(",app,"):")
+        print("KS TEST:")
         print("Confidence degree: ", IC,"%")
         print("D observed: ", Dobs)
         print("D observed(two samples): ", ks_statistic)
@@ -1070,7 +1070,7 @@ def tcdf(y, parameter, traffic):
             if plot == "show":
                 plt.show()
             if plot == "save":
-                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_kstest_tcdf_"+traffic+"_"+distribution+"_"+parameter, fmt="png",dpi=1000)
+                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_kstest_tcdf_"+traffic+"_"+distribution+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
         global first_tcdf_time
         global first_tcdf_size
@@ -2024,9 +2024,9 @@ def print_stats(w, st, flow_id, proto, t, lost_packets, throughput, delay, jitte
     global mt_RG
     global t_net
     if flow_id == 1:
-        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "w")
+        w = open("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "w")
     else: 
-        w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
+        w = open("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
 
     w.write("\n  FlowID: "+ str(flow_id)+"\n")
     w.write("  Protocol: " + str(proto)+"\n")
@@ -2167,8 +2167,10 @@ def compare(app_protocol):
 
         grouped = ns3_df.groupby(ns3_df.Port)
 
-        req_df = grouped.get_group(8080)
-        resp_df = grouped.get_group(8081)
+        # req_df = grouped.get_group(8080)
+        # resp_df = grouped.get_group(8081)
+        resp_df = grouped.get_group(49153)
+        req_df = grouped.get_group(49153)
 
         # print("Client: \n",client_df[:10])
         # print("Server: \n",server_df[:10])
@@ -2477,7 +2479,7 @@ def compare(app_protocol):
                     if plot == "show":
                         plt.show()  
                     if plot == "save":
-                        fig.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
+                        fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
                         plt.close()
 
                 if meth == "graphical":
@@ -2555,7 +2557,7 @@ def compare(app_protocol):
                     if plot == "show":
                         plt.show()  
                     if plot == "save":
-                        plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
+                        plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
                         plt.close()
                 if meth == "kstest":  
 
@@ -2755,7 +2757,7 @@ def compare(app_protocol):
                                 print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
                             
 
-                            w = open("../../../Results/Prints/"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
+                            w = open("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
                             w.write("\nKS TEST("+str(app)+")_"+alt+"_"+md+":"+"\n")
                             w.write("Confidence degree: "+ str(IC)+"%\n")
                             w.write("D observed: "+ str(Dobs)+"\n")
@@ -2784,7 +2786,7 @@ def compare(app_protocol):
                             if plot == "show":
                                 plt.show()  
                             if plot == "save":
-                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
+                                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
                                 plt.close()
                             
                             # Definindo diferença entre traces
@@ -2797,7 +2799,7 @@ def compare(app_protocol):
                             if plot == "show":
                                 plt.show()  
                             if plot == "save":
-                                plt.savefig("../../../Results/Figures/"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_hist_"+parameter, fmt="png",dpi=1000)
+                                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_hist_"+parameter, fmt="png",dpi=1000)
                                 plt.close()
                     
 
@@ -3226,13 +3228,13 @@ def main(argv):
     # Habilita todas as notificações no NS3
     # ns.core.LogComponentEnableAll(ns.core.LOG_INFO)
 
-    nUsers = 2 # 255 is max
+    n_users = 5 # 255 is max
     # Criando container de nós 
     nodes = ns.network.NodeContainer()
     # Criando nós
-    nodes.Create(nUsers)
+    nodes.Create(n_users)
     
-    if nUsers <= 2:
+    if n_users <= 2:
         t_net = "p2p"
         # Definindo comunicação P2P
         p2p = ns.point_to_point.PointToPointHelper()
@@ -3321,66 +3323,57 @@ def main(argv):
             ################# Application Request #################
             req_sinkPort = 8080
             ################# Request Server Application #################
-            req_sinkApps = np.empty(nUsers-1)
-            req_sinkApps = [0 for x in range(nUsers-1)] 
-            req_packetSinkHelper = np.empty(nUsers-1)
-            req_packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
-            
-            for i in range(0,len(req_sinkApps),1):
-                req_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
-                req_sinkApps[i] = req_packetSinkHelper[i].Install(nodes.Get(i))
-                req_sinkApps[i].Start(ns.core.Seconds(0.0))
-                req_sinkApps[i].Stop(ns.core.Seconds(timeStopSimulation))
+            # req_sinkApps = np.empty(n_users-1)
+            # req_sinkApps = [0 for x in range(n_users-1)] 
+            # req_packetSinkHelper = np.empty(n_users-1)
+            # req_packetSinkHelper = [0 for x in range(n_users-1)] 
+
+            ################# Setting sinkApps #################
+            # for i in range(0,len(req_sinkApps),1):
+            req_packetSinkHelper = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
+            req_sinkApps = req_packetSinkHelper.Install(nodes.Get(0))
+            req_sinkApps.Start(ns.core.Seconds(0.0))
+            req_sinkApps.Stop(ns.core.Seconds(timeStopSimulation))
             ################# Request Client Application #################
-            req_app = np.empty(nUsers-1)
-            req_app = [0 for x in range(nUsers-1)] 
-            
+            req_app = np.empty(n_users-1)
+            req_app = [0 for x in range(n_users-1)]
+
             for i in range(0,len(req_app),1):
                 req_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(0), req_sinkPort))
                 req_ns3TcpSocket = ns.network.Socket.CreateSocket(nodes.Get(i), ns.internet.TcpSocketFactory.GetTypeId())
                 req_app[i] = ReqMyApp()
-                # def Setup(self, socket, address, packetSize, nRequestPackets, dataRate):
-                # app.Setup(ns3TcpSocket, sinkAddress, packetSize, nRequestPackets, ns3.DataRate(dataRate))
                 req_app[i].Setup(req_ns3TcpSocket, req_sinkAddress, nRequestPackets)
                 nodes.Get(i+1).AddApplication(req_app[i])
-
                 req_app[i].SetStartTime(ns.core.Seconds(0.0))
                 req_app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
-
                 ns.core.Simulator.Schedule(ns.core.Seconds(1), RequestCwndChange, req_app[i])
             
             ################### Application Response #####################
             resp_sinkPort = 8081
             ################# Response Server Application #################
-            resp_sinkApps = np.empty(nUsers-1)
-            resp_sinkApps = [0 for x in range(nUsers-1)] 
-            resp_packetSinkHelper = np.empty(nUsers-1)
-            resp_packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            resp_sinkApps = np.empty(n_users-1)
+            resp_sinkApps = [0 for x in range(n_users-1)] 
+            resp_packetSinkHelper = np.empty(n_users-1)
+            resp_packetSinkHelper = [0 for x in range(n_users-1)] 
             
-            for i in range(0,len(resp_sinkApps),1):
-                
+            ################# Setting sinkApps #################
+            for i in range(0,len(resp_sinkApps),1):    
                 resp_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), resp_sinkPort))
                 resp_sinkApps[i] = resp_packetSinkHelper[i].Install(nodes.Get(i))
-                resp_sinkApps[i].Start(ns.core.Seconds(0.1))
+                resp_sinkApps[i].Start(ns.core.Seconds(0.01))
                 resp_sinkApps[i].Stop(ns.core.Seconds(timeStopSimulation))
-            ################# Response Client Application #################
-            resp_app = np.empty(nUsers-1)
-            resp_app = [0 for x in range(nUsers-1)] 
             
+            ################# Response Client Application #################
+            resp_app = np.empty(n_users-1)
+            resp_app = [0 for x in range(n_users-1)] 
             for i in range(0,len(resp_app),1):
                 resp_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(i), resp_sinkPort))
                 resp_ns3TcpSocket = ns.network.Socket.CreateSocket(nodes.Get(0), ns.internet.TcpSocketFactory.GetTypeId())
                 resp_app[i] = RespMyApp()
-                # def Setup(self, socket, address, packetSize, nResponsePackets, dataRate):
-                # app.Setup(ns3TcpSocket, sinkAddress, packetSize, nResponsePackets, ns3.DataRate(dataRate))
                 resp_app[i].Setup(resp_ns3TcpSocket, resp_sinkAddress, nResponsePackets)
                 nodes.Get(i+1).AddApplication(resp_app[i])
-
-                resp_app[i].SetStartTime(ns.core.Seconds(0.1))
+                resp_app[i].SetStartTime(ns.core.Seconds(0.01))
                 resp_app[i].SetStopTime(ns.core.Seconds(timeStopSimulation))
-
                 ns.core.Simulator.Schedule(ns.core.Seconds(1), ResponseCwndChange, resp_app[i])
 
     if (app_protocol == "ftp"):
@@ -3472,20 +3465,20 @@ def main(argv):
             ################# Application Request #################
             req_sinkPort = 8080
             ################# Request Server Application #################
-            req_sinkApps = np.empty(nUsers-1)
-            req_sinkApps = [0 for x in range(nUsers-1)] 
-            req_packetSinkHelper = np.empty(nUsers-1)
-            req_packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            req_sinkApps = np.empty(n_users-1)
+            req_sinkApps = [0 for x in range(n_users-1)] 
+            req_packetSinkHelper = np.empty(n_users-1)
+            req_packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(req_sinkApps),1):
-                req_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
-                req_sinkApps[i] = req_packetSinkHelper[i].Install(nodes.Get(i))
-                req_sinkApps[i].Start(ns.core.Seconds(0.0))
-                req_sinkApps[i].Stop(ns.core.Seconds(timeStopRequest))
+                req_packetSinkHelper = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
+                req_sinkApps = req_packetSinkHelper.Install(nodes.Get(i))
+                req_sinkApps.Start(ns.core.Seconds(0.0))
+                req_sinkApps.Stop(ns.core.Seconds(timeStopRequest))
             ################# Request Client Application #################
-            req_app = np.empty(nUsers-1)
-            req_app = [0 for x in range(nUsers-1)] 
+            req_app = np.empty(n_users-1)
+            req_app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(req_app),1):
                 req_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(0), req_sinkPort))
@@ -3504,11 +3497,11 @@ def main(argv):
             ################### Application Response #####################
             resp_sinkPort = 8081
             ################# Response Server Application #################
-            resp_sinkApps = np.empty(nUsers-1)
-            resp_sinkApps = [0 for x in range(nUsers-1)] 
-            resp_packetSinkHelper = np.empty(nUsers-1)
-            resp_packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            resp_sinkApps = np.empty(n_users-1)
+            resp_sinkApps = [0 for x in range(n_users-1)] 
+            resp_packetSinkHelper = np.empty(n_users-1)
+            resp_packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(resp_sinkApps),1):
                 resp_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), resp_sinkPort))
@@ -3517,8 +3510,8 @@ def main(argv):
                 resp_sinkApps[i].Stop(ns.core.Seconds(timeStopResponse))
 
             ################# Response Client Application #################
-            resp_app = np.empty(nUsers-1)
-            resp_app = [0 for x in range(nUsers-1)] 
+            resp_app = np.empty(n_users-1)
+            resp_app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(resp_app),1):
                 resp_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(i), resp_sinkPort))
@@ -3537,11 +3530,11 @@ def main(argv):
             ################# Application Send Files #################
             ################# Serve Application #################
             sinkPort = 8082
-            sinkApps = np.empty(nUsers-1)
-            sinkApps = [0 for x in range(nUsers-1)] 
-            packetSinkHelper = np.empty(nUsers-1)
-            packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            sinkApps = np.empty(n_users-1)
+            sinkApps = [0 for x in range(n_users-1)] 
+            packetSinkHelper = np.empty(n_users-1)
+            packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(sinkApps),1):
                 packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), sinkPort))
@@ -3549,8 +3542,8 @@ def main(argv):
                 sinkApps[i].Start(ns.core.Seconds(timeStopRequest))
                 sinkApps[i].Stop(ns.core.Seconds(timeStopSimulation))
 
-            app = np.empty(nUsers-1)
-            app = [0 for x in range(nUsers-1)] 
+            app = np.empty(n_users-1)
+            app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(app),1):
                 ################# Aplicação do cliente #################
@@ -3624,11 +3617,11 @@ def main(argv):
             # Application UDP
             sinkPort = 8080
             # Aplicação do servidor
-            sinkApps = np.empty(nUsers-1)
-            sinkApps = [0 for x in range(nUsers-1)] 
-            packetSinkHelper = np.empty(nUsers-1)
-            packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            sinkApps = np.empty(n_users-1)
+            sinkApps = [0 for x in range(n_users-1)] 
+            packetSinkHelper = np.empty(n_users-1)
+            packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(sinkApps),1):
                 packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::UdpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), sinkPort))
@@ -3636,8 +3629,8 @@ def main(argv):
                 sinkApps[i].Start(ns.core.Seconds(0.0))
                 sinkApps[i].Stop(ns.core.Seconds(timeStopSimulation))
 
-            app = np.empty(nUsers-1)
-            app = [0 for x in range(nUsers-1)] 
+            app = np.empty(n_users-1)
+            app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(app),1):
                 # Aplicação do cliente
@@ -3746,20 +3739,20 @@ def main(argv):
             ################# Application Request #################
             req_sinkPort = 8080
             ################# Request Server Application #################
-            req_sinkApps = np.empty(nUsers-1)
-            req_sinkApps = [0 for x in range(nUsers-1)] 
-            req_packetSinkHelper = np.empty(nUsers-1)
-            req_packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            req_sinkApps = np.empty(n_users-1)
+            req_sinkApps = [0 for x in range(n_users-1)] 
+            req_packetSinkHelper = np.empty(n_users-1)
+            req_packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(req_sinkApps),1):
-                req_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
-                req_sinkApps[i] = req_packetSinkHelper[i].Install(nodes.Get(i))
-                req_sinkApps[i].Start(ns.core.Seconds(0.0))
-                # req_sinkApps[i].Stop(ns.core.Seconds(timeStopRequest))
+                req_packetSinkHelper = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
+                req_sinkApps = req_packetSinkHelper.Install(nodes.Get(i))
+                req_sinkApps.Start(ns.core.Seconds(0.0))
+                # req_sinkApps.Stop(ns.core.Seconds(timeStopRequest))
             ################# Request Client Application #################
-            req_app = np.empty(nUsers-1)
-            req_app = [0 for x in range(nUsers-1)] 
+            req_app = np.empty(n_users-1)
+            req_app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(req_app),1):
                 req_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(0), req_sinkPort))
@@ -3778,11 +3771,11 @@ def main(argv):
             ################### Application Response #####################
             resp_sinkPort = 8081
             ################# Response Server Application #################
-            resp_sinkApps = np.empty(nUsers-1)
-            resp_sinkApps = [0 for x in range(nUsers-1)] 
-            resp_packetSinkHelper = np.empty(nUsers-1)
-            resp_packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            resp_sinkApps = np.empty(n_users-1)
+            resp_sinkApps = [0 for x in range(n_users-1)] 
+            resp_packetSinkHelper = np.empty(n_users-1)
+            resp_packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(resp_sinkApps),1):
                 resp_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), resp_sinkPort))
@@ -3791,8 +3784,8 @@ def main(argv):
                 resp_sinkApps[i].Stop(ns.core.Seconds(timeStopResponse))
 
             ################# Response Client Application #################
-            resp_app = np.empty(nUsers-1)
-            resp_app = [0 for x in range(nUsers-1)] 
+            resp_app = np.empty(n_users-1)
+            resp_app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(resp_app),1):
                 resp_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(i), resp_sinkPort))
@@ -3811,11 +3804,11 @@ def main(argv):
             ################# Application Send Files #################
             ################# Serve Application #################
             sinkPort = 8082
-            sinkApps = np.empty(nUsers-1)
-            sinkApps = [0 for x in range(nUsers-1)] 
-            packetSinkHelper = np.empty(nUsers-1)
-            packetSinkHelper = [0 for x in range(nUsers-1)] 
-            # app = np.empty(nUsers-1)
+            sinkApps = np.empty(n_users-1)
+            sinkApps = [0 for x in range(n_users-1)] 
+            packetSinkHelper = np.empty(n_users-1)
+            packetSinkHelper = [0 for x in range(n_users-1)] 
+            # app = np.empty(n_users-1)
             
             for i in range(0,len(sinkApps),1):
                 packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), sinkPort))
@@ -3823,8 +3816,8 @@ def main(argv):
                 sinkApps[i].Start(ns.core.Seconds(timeStopRequest))
                 sinkApps[i].Stop(ns.core.Seconds(timeStopSimulation))
 
-            app = np.empty(nUsers-1)
-            app = [0 for x in range(nUsers-1)] 
+            app = np.empty(n_users-1)
+            app = [0 for x in range(n_users-1)] 
             
             for i in range(0,len(app),1):
                 ################# Aplicação do cliente #################
@@ -3855,7 +3848,7 @@ def main(argv):
     monitor.SerializeToXmlFile ("myapp-py.xml", True, True)
 
     # Gerador de .pcap da rede
-    if nUsers <= 2:
+    if n_users <= 2:
         p2p.EnablePcapAll ("../../../Results/Traces/"+app_protocol+"_eth-myapp-py.pcap", True)
     else:
         csma.EnablePcapAll ("../../../Results/Traces/"+app_protocol+"_eth-myapp-py.pcap", True)
@@ -3895,19 +3888,19 @@ def main(argv):
     # print("Mean delay", m_delay)
 
     if run <= 1:
-        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "w")
+        w = open("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "w")
         w.write('"n_Run";"Lost_Packets";"Throughput";"Delay";"Jitter"\n')
         
     else:
-        w = open("../../../Results/Figures/"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "a")
+        w = open("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos_"+mt_RG+"_"+str(IC)+".txt", "a")
     
     w.write('"'+str(run) + '";"' + str(m_lost_packets) + '";"' + str(m_throughput) + '";"' + str(m_delay) + '";"' + str(m_jitter)+'"\n')
     w.close()
     
     if run == 1 and validation == "False":
-        ecdf_df = pd.read_csv(app_protocol+"_qos_ecdf.txt", sep=";")
-        tcdf_df = pd.read_csv(app_protocol+"_qos_tcdf.txt", sep=";")
-        pd_df = pd.read_csv(app_protocol+"_qos_PD.txt", sep=";")
+        ecdf_df = pd.read_csv("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos_ecdf_"+str(IC)+".txt", sep=";")
+        tcdf_df = pd.read_csv("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos_tcdf_"+str(IC)+".txt", sep=";")
+        pd_df = pd.read_csv("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos_PD_"+str(IC)+".txt", sep=";")
         # print("PD: ")
         # print (pd_df)
         # print("ECDF: ")
@@ -3973,7 +3966,11 @@ def main(argv):
 
         fig.tight_layout()
 
-        plt.show()
+        if plot == "show":
+            plt.show()  
+        if plot == "save":
+            plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos", fmt="png", dpi=1000)
+            plt.close()
 
     if (mt_RG == "tcdf" or mt_RG == "ecdf") and validation == "True":
         # os.system("cd ../../../FWGNet/")
