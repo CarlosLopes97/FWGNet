@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
+# Setting source code directory
+src="/home/carl/FWGNet/new_FWGNet/"
 # Set variable start capturing of file
 get_pcap="False"
 
-# # Capturing traffic (If get_pcap == "True")
+# Capturing traffic (If get_pcap == "True")
 if [[ $get_pcap = "True" ]]
 then
     # Start capture traffic module
-    sudo ./Shell/capture.sh
+    ./Shell/capture.sh
     echo "End of Capture Module"
 fi
 # # If get_pcap == "False" get a exist file
@@ -23,27 +25,29 @@ fi
 
 
 # Start workload generation module
-sudo python Python/workload_generation.py
+python Python/workload_generation.py
 echo "End of Workload Generation Module"
 
 # Start NS3 module 
-dir_NS3="repos/ns-3-allinone/ns-3.30/"
+dir_NS3="/home/carl/repos/ns-3-allinone/ns-3.30/"
 file_Simulation="simulation"
 
 
 # Copy file to scratch
-sudo cp C++/${file}.cc ${dir_NS3}/scratch
+cp C++/${file_Simulation}.cc ${dir_NS3}scratch
 # # Set permissions to file in scratch
-sudo chmod 777 ${dir_NS3}scratch/${file}.cc
+chmod 777 ${dir_NS3}scratch/${file_Simulation}.cc
 
-# # Open NS3 directory
-# cd ${dir_NS3} 
+# Open NS3 directory
+cd ${dir_NS3} 
 
 # # Run simulation file
-./waf --run "scratch/${file}"
+# ./waf --run "scratch/${file_Simulation}"
 
 echo "End of Simulation Module"
 
+# Open source directory
+cd ${src}
 # Start filter module (simulated .pcap file)
 ./Shell/filter.sh
 echo "End of Simulated Filter Module"

@@ -3,6 +3,7 @@ app_protocol="http"
 rd="pcap"
 if [[ $app_protocol = "http" ]]
 then
+    # dir_tr_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-2/TCP-files/ftp-tcp-b0.pcap"
     dir_tr_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-1/small-tcp-http.${rd}"
     # dir_tr_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-1/http-p2p.${rd}"
 fi
@@ -19,4 +20,4 @@ sudo sed -i '1s/^/"/' "${app_protocol}_trace.txt"
 sudo sed -i '${s/$/"/}' "${app_protocol}_trace.txt"
 
 # tshark -r ${dir_tr_file} -qz io,phs
-tshark -r ${dir_tr_file} -T fields -e frame.number -e frame.time_relative -e ip.src -e ip.dst -e frame.protocols -e frame.len -E header=y -E quote=n -E occurrence=f
+# tshark -r ${dir_tr_file} -T fields -e frame.number -e frame.time_relative -e ip.src -e ip.dst -e frame.protocols -e frame.len -E header=y -E quote=n -E occurrence=f

@@ -1,20 +1,20 @@
 # coding: utf-8
 
-
+import sys
 import pandas as pd
 import numpy as np
 import scipy
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
-import seaborn as sns
-import statsmodels as sm
+# import seaborn as sns
+# import statsmodels as sm
 import scipy.stats as stats
-from statsmodels.distributions.empirical_distribution import ECDF
-import matplotlib.pyplot as plt
+# from statsmodels.distributions.empirical_distribution import ECDF
+import matplotlib as plt
 import os
 import io
 import subprocess
-import statsmodels.distributions.empirical_distribution as edf
+# import statsmodels.distributions.empirical_distribution as edf
 from scipy.interpolate import interp1d
 from scipy.stats.distributions import chi2
 import random
@@ -1007,16 +1007,24 @@ def ecdf(y, parameter, traffic):
 
 
 # Função de definição da aplicação HTTP
-def http_read(app_protocol):
+def read_filter():
     global const_Size
+                                                             
+    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocol"])
+    print(txt_df)
+    txt_df = txt_df[txt_df.Size > 0]
 
-    ns3_df = pd.read_csv("scratch/"+app_protocol+"_trace.txt", sep=";", names=["req_resp","Time","Size"])
-    # print(ns3_df)
-    ns3_df = ns3_df[ns3_df.Size > 0]
-    time_req_df = ns3_df[ns3_df['req_resp'].str.contains("GET")]
+    # Agrupar dados do framework por protocol
+    # Criar os arquivos de acordo com os protocolos diferentes
+    # arr_column = df['protocols'].to_numpy()
+    # Cria valores só pra um valor da coluna 
+    # for proto in arr_column:
+        # print(txt_df.loc[df['protocols'] == str(proto)])
+
+    time_req_df = txt_df[txt_df['req_resp'].str.contains("GET")]
     # time_req_df["Time"] = time_req_df["Time"].apply(pd.to_numeric)
     # print(time_req_df)
-    time_resp_df = ns3_df[ns3_df['req_resp'].str.contains("OK")]
+    time_resp_df = txt_df[txt_df['req_resp'].str.contains("OK")]
     # print(time_resp_df)
     # time_resp_df["Time"] = time_resp_df["Time"].apply(pd.to_numeric)
     
@@ -1025,10 +1033,10 @@ def http_read(app_protocol):
    
     if const_Size == "False":
     # Abrindo arquivos .txt
-        size_req_df = ns3_df[ns3_df['req_resp'].str.contains("GET")]
+        size_req_df = txt_df[txt_df['req_resp'].str.contains("GET")]
         # size_req_df["Size"] = size_req_df["Size"].apply(pd.to_numeric)
 
-        size_resp_df = ns3_df[ns3_df['req_resp'].str.contains("HTTP/1.1")]
+        size_resp_df = txt_df[txt_df['req_resp'].str.contains("HTTP/1.1")]
         # size_resp_df["Size"] = size_resp_df["Size"].apply(pd.to_numeric)
         size_req_df.round(5)
         size_resp_df.round(5)
@@ -1044,30 +1052,31 @@ def http_read(app_protocol):
 
 
 def main(argv):
+    read_filter()
 
-    traffic = "send"
-        parameter = "Size"
+    # traffic = "send"
+    # parameter = "Size"
 
-        # Defininfo se o pacote é constante
-        if const_Size == "True":
-            if mt_const == "Trace" and first_trace_size == 0:
-                read_txt(parameter, traffic, app_protocol)
-            aux_packet = constSize(traffic, app_protocol)
-            packet = ns.network.Packet(aux_packet)
-        else:
-            # Condição de escolha do método de geração de variáveis aleatórias 
-            # diretamente por uma distribuição de probabiidade
-            if mt_RG == "PD":
-                # Chamando a função wgwnet_PD() e retornando valor gerado para uma variável auxiliar
-                aux_packet = wgwnet_PD(parameter, traffic)
-        # Condição de escolha do método de geração de variáveis aleatórias 
-            # baseado nos dados do trace
-            if first_trace_size == 0 and (mt_RG == "ecdf" or mt_RG == "tcdf"):
-                
-                if first_trace_size == 0:
-                    # Definindo o método de leitura do arquivo trace
-                    if reader == "txt":
-                        read_txt(parameter, traffic, app_protocol)
-    
+    # # Defininfo se o pacote é constante
+    # if const_Size == "True":
+    #     if mt_const == "Trace" and first_trace_size == 0:
+    #         read_txt(parameter, traffic, app_protocol)
+    #     aux_packet = constSize(traffic, app_protocol)
+    #     packet = ns.network.Packet(aux_packet)
+    # else:
+    #     # Condição de escolha do método de geração de variáveis aleatórias 
+    #     # diretamente por uma distribuição de probabiidade
+    #     if mt_RG == "PD":
+    #         # Chamando a função wgwnet_PD() e retornando valor gerado para uma variável auxiliar
+    #         aux_packet = wgwnet_PD(parameter, traffic)
+    # # Condição de escolha do método de geração de variáveis aleatórias 
+    #     # baseado nos dados do trace
+    #     if first_trace_size == 0 and (mt_RG == "ecdf" or mt_RG == "tcdf"):
+            
+    #         if first_trace_size == 0:
+    #             # Definindo o método de leitura do arquivo trace
+    #             if reader == "txt":
+    #                 read_txt(parameter, traffic, app_protocol)
+
 if __name__ == '__main__':
     main(sys.argv)
