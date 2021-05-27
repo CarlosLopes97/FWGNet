@@ -76,7 +76,7 @@ then
         # sudo termshark -r ${dir_tr_file} -T fields -E separator=/t -e frame.coloring_rule.name > repos/ns-3-allinone/ns-3.30/scratch/compare_${app_protocol}_proto.txt
         
 
-        sudo termshark -r ${dir_tr_file} -T fields -E separator=/t -e frame.time_relative -e tcp.dstport -e tcp.len > repos/ns-3-allinone/ns-3.30/scratch/compare_${app_protocol}.txt
+        sudo termshark -r ${dir_tr_file} -T fields -E separator=/t -e frame.time_relative -e ip.src -e ip.dst -e tcp.len > repos/ns-3-allinone/ns-3.30/scratch/compare_${app_protocol}.txt
         # sudo chmod 777 repos/ns-3-allinone/ns-3.30/scratch/compare_${app_protocol}_size_req.txt
         # sudo chmod 777 repos/ns-3-allinone/ns-3.30/scratch/compare_${app_protocol}_time.txt
         # sudo chmod 777 repos/ns-3-allinone/ns-3.30/scratch/compare_${app_protocol}_tsval.txt

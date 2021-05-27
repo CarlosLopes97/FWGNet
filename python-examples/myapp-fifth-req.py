@@ -2114,7 +2114,7 @@ def print_stats(w, st, flow_id, proto, t, lost_packets, throughput, delay, jitte
 
 # Função de comparação dos resultados obtidos com o NS3 com os dados dos traces
 # Esta função é utilizada apenas quando o método de geração variáveis aleatórias selecionado é por "Trace"
-def compare(app_protocol):
+def compare(app_protocol, n_users):
     # Chamando variáveis globais
     global t_time
     global t_size
@@ -2160,23 +2160,39 @@ def compare(app_protocol):
         Applications = ["Request","Response"]
         ############################# SIZE #############################
         # Abrindo arquivos .txt
-        ns3_df = pd.read_csv("scratch/compare_"+app_protocol+".txt", sep=";",  names=["Time", "Port","Size"])
+        ns3_df = pd.read_csv("scratch/compare_"+app_protocol+".txt", sep=";",  names=["Time", "SRC", "DST","Size"])
         
         ns3_df = ns3_df[ns3_df.Size != 0]
-        # print(ns3_df[:10])
+        # print(ns3_df[:20])
 
-        grouped = ns3_df.groupby(ns3_df.Port)
+        grouped_src = ns3_df.groupby(ns3_df.SRC)
+        for i in range(1, n_users):
+            req_df = grouped_src.get_group("192.168.1."+str(i))
+            
+            time_req_ns3[i] = req_df.loc[df["SRC"] == "192.168.1."+str(i), 'Time']
 
+            time_req_ns3 = np.array(req_df['Time'])
+
+
+
+        grouped_dst = ns3_df.groupby(ns3_df.DST)
+        for i in range(1, n_users):
+            resp_df = grouped_dst.get_group("192.168.1."+str(i))
+            time_resp_ns3[i] = np.array(resp_df[i]['Time'])
+        
+        print(req_df)
+        print(resp_df)
+        
         # req_df = grouped.get_group(8080)
         # resp_df = grouped.get_group(8081)
-        resp_df = grouped.get_group(49153)
-        req_df = grouped.get_group(49153)
+        # resp_df = grouped.get_group(49153)
+        # req_df = grouped.get_group(49153)
 
         # print("Client: \n",client_df[:10])
         # print("Server: \n",server_df[:10])
 
-        time_resp_ns3 = np.array(resp_df['Time'])
-        time_req_ns3 = np.array(req_df['Time'])
+        # time_resp_ns3 = np.array(resp_df['Time'])
+        # time_req_ns3 = np.array(req_df['Time'])
 
         time_resp_ns3.sort()
         sub = []
@@ -3329,14 +3345,14 @@ def main(argv):
             # req_packetSinkHelper = [0 for x in range(n_users-1)] 
 
             ################# Setting sinkApps #################
-            # for i in range(0,len(req_sinkApps),1):
+            
             req_packetSinkHelper = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
             req_sinkApps = req_packetSinkHelper.Install(nodes.Get(0))
             req_sinkApps.Start(ns.core.Seconds(0.0))
             req_sinkApps.Stop(ns.core.Seconds(timeStopSimulation))
             ################# Request Client Application #################
             req_app = np.empty(n_users-1)
-            req_app = [0 for x in range(n_users-1)]
+            req_app = [0 for x in range(n_users-1)] 
 
             for i in range(0,len(req_app),1):
                 req_sinkAddress = ns.network.Address(ns.network.InetSocketAddress(interfaces.GetAddress(0), req_sinkPort))
@@ -3472,10 +3488,10 @@ def main(argv):
             # app = np.empty(n_users-1)
             
             for i in range(0,len(req_sinkApps),1):
-                req_packetSinkHelper = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
-                req_sinkApps = req_packetSinkHelper.Install(nodes.Get(i))
-                req_sinkApps.Start(ns.core.Seconds(0.0))
-                req_sinkApps.Stop(ns.core.Seconds(timeStopRequest))
+                req_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
+                req_sinkApps[i] = req_packetSinkHelper[i].Install(nodes.Get(i))
+                req_sinkApps[i].Start(ns.core.Seconds(0.0))
+                req_sinkApps[i].Stop(ns.core.Seconds(timeStopRequest))
             ################# Request Client Application #################
             req_app = np.empty(n_users-1)
             req_app = [0 for x in range(n_users-1)] 
@@ -3746,10 +3762,10 @@ def main(argv):
             # app = np.empty(n_users-1)
             
             for i in range(0,len(req_sinkApps),1):
-                req_packetSinkHelper = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
-                req_sinkApps = req_packetSinkHelper.Install(nodes.Get(i))
-                req_sinkApps.Start(ns.core.Seconds(0.0))
-                # req_sinkApps.Stop(ns.core.Seconds(timeStopRequest))
+                req_packetSinkHelper[i] = ns.applications.PacketSinkHelper("ns3::TcpSocketFactory", ns.network.InetSocketAddress(ns.network.Ipv4Address.GetAny(), req_sinkPort))
+                req_sinkApps[i] = req_packetSinkHelper[i].Install(nodes.Get(i))
+                req_sinkApps[i].Start(ns.core.Seconds(0.0))
+                # req_sinkApps[i].Stop(ns.core.Seconds(timeStopRequest))
             ################# Request Client Application #################
             req_app = np.empty(n_users-1)
             req_app = [0 for x in range(n_users-1)] 
@@ -3972,11 +3988,11 @@ def main(argv):
             plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_qos", fmt="png", dpi=1000)
             plt.close()
 
-    if (mt_RG == "tcdf" or mt_RG == "ecdf") and validation == "True":
+    if (mt_RG == "tcdf" or mt_RG == "ecdf"):
         # os.system("cd ../../../FWGNet/")
         os.system("sudo  chmod 777 ../../../FWGNet/run-pos.sh")
         os.system("sudo bash ./../../../FWGNet/run-pos.sh "+app_protocol)
-        compare(app_protocol)
+        compare(app_protocol, n_users)
 
 
 if __name__ == '__main__':
