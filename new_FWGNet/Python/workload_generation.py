@@ -9,17 +9,26 @@ from sklearn.metrics import r2_score
 import seaborn as sns
 import statsmodels as sm
 import scipy.stats as stats
-# from statsmodels.distributions.empirical_distribution import ECDF
 import matplotlib.pyplot as plt
+
+# plt.style.use('science')
+# plt.rcParams.update({
+#     "font.family": "serif",   # specify font family here
+#     "font.serif": ["Times"],  # specify font here
+#     "font.size":11})   
+# plt.style.reload_library()
+
+
 import os
 import io
 import subprocess
-# import statsmodels.distributions.empirical_distribution as edf
 from scipy.interpolate import interp1d
 from scipy.stats.distributions import chi2
 import random
 from matplotlib.ticker import FixedLocator, FixedFormatter
-
+import math
+import warnings
+warnings.filterwarnings("ignore")
 
 def ksvalid(size, Dobs, IC):
     # Definir intervalo de confiança
@@ -33,25 +42,25 @@ def ksvalid(size, Dobs, IC):
     
     D_critico = 0
     rejects = ""
-    IC = str(IC)+"%"
-    # print("IC: ", IC)
+    
+    str_IC = str(IC)+"%"
+    
     if (size<=35):
         ks_df = pd.read_csv("/home/carl/New_Results/Files/kstest.txt", sep=";")
-        # ks_df = ks_df[ks_df['Size'].str.contains(""+size+"")]
         # print(ks_df)
-        D_critico = ks_df[""+IC+""].iloc[size-1]
+        D_critico = ks_df[""+str_IC+""].iloc[size-1]
         
     else:
         # Condição para definir o D_critico de acordo com o tamanho dos dados
-        if IC == "99.80%":
+        if str_IC == "99.80%":
             D_critico = 1.07/np.sqrt(size)
-        if IC == "99.85%":
+        if str_IC == "99.85%":
             D_critico = 1.14/np.sqrt(size)
-        if IC == "90.0%":
+        if str_IC == "90.0%":
             D_critico = 1.224/np.sqrt(size)
-        if IC == "95.0%":
+        if str_IC == "95.0%":
             D_critico = 1.358/np.sqrt(size)
-        if IC == "99.0%":
+        if str_IC == "99.0%":
             D_critico = 1.628/np.sqrt(size)
     
     D_critico = np.around(D_critico, 2)
@@ -65,18 +74,18 @@ def ksvalid(size, Dobs, IC):
         rejects = "Fails to Reject the Null Hypothesis"
     
     # IC = IC[:-1]
-    IC = IC.replace('%', '')
+    str_IC = str_IC.replace('%', '')
     # print("IC: ", IC)
-    return rejects, float(IC), D_critico
+    return rejects, D_critico
 
 
 
-def plot_histogram(y, save_graph, parameter, case_study, proto):
-    if save_graph == True:
+def plot_histogram(y, save_Graph, parameter, case_Study, proto):
+    if save_Graph == True:
         fig, ax = plt.subplots(1, 1)
         ax = sns.distplot(y)
         plt.title("Histogram of flow "+proto+" ("+parameter+")")
-        fig.savefig("/home/carl/New_Results/Files/"+case_study+"_histogram_"+proto+"_hist_"+parameter, fmt="png",dpi=1000)
+        fig.savefig("/home/carl/New_Results/Graphics/"+case_Study+"_histogram_"+proto+"_"+parameter, fmt="png",dpi=1000)
         plt.close()
 
     # if plot == "show":
@@ -87,8 +96,9 @@ def plot_histogram(y, save_graph, parameter, case_study, proto):
 # Função para definir a distribuição de probabilidade compatível com os 
 # valores do trace utilizada para gerar valores aleatórios por TCDF
         
-def tcdf(y, parameter, case_study, save_graph, IC):
-    global t_net
+def tcdf(y, parameter, case_Study, save_Graph, IC, proto, tcdf_First):
+    # y = [142.773, 146.217, 147.676, 147.740, 149.016, 149.105, 150.476, 151.284, 151.461, 151.763, 151.932, 154.519, 154.632, 154.789, 155.008, 155.325, 155.402, 155.506, 155.545, 155.561, 155.581, 155.584, 155.701, 156.115, 156.340, 156.851, 156.879, 157.044, 157.404, 157.435, 157.573, 157.599, 157.688, 157.717, 157.858, 158.033, 158.154, 158.387, 158.475, 159.068, 159.215, 159.234, 159.366, 159.499, 159.576, 159.601, 159.767, 159.824, 159.978, 160.036, 160.289, 160.289, 160.327, 160.430, 160.496, 160.519, 160.719, 160.745, 160.942, 161.341, 161.438, 161.683, 161.767, 161.865, 162.064, 162.289, 162.302, 162.711, 162.752, 162.855, 162.866, 162.884, 162.918, 162.947, 163.136, 164.080, 164.138, 164.479, 164.524, 164.566, 164.850, 164.965, 165.000, 165.292, 165.397, 165.408, 165.538, 165.997, 166.311, 166.327, 166.367, 166.671, 167.214, 167.690, 168.178, 170.181, 170.633, 171.434, 173.424, 179.891]
+    # y = np.array(y)
     # Indexar o vetor y pelo vetor x
     x = np.arange(len(y))
     # Definindo o tamanho da massa de dados
@@ -110,8 +120,8 @@ def tcdf(y, parameter, case_study, save_graph, IC):
 
     # Mais distribuições podem ser encontradas no site da lib "scipy"
     # Veja https://docs.scipy.org/doc/scipy/reference/stats.html para mais detalhes
-    dist_names = ['erlang',
-                'expon',
+    dist_names = ['expon',
+                'norm',
                 'gamma',
                 'lognorm',
                 'norm',
@@ -120,7 +130,9 @@ def tcdf(y, parameter, case_study, save_graph, IC):
                 'uniform',
                 'dweibull',
                 'weibull_min',
-                'weibull_max']
+                'weibull_max',
+                'erlang'
+                ]
     # Obter os métodos de inferência KS test e Chi-squared
     # Configurar listas vazias para receber os resultados
     chi_square = []
@@ -138,6 +150,7 @@ def tcdf(y, parameter, case_study, save_graph, IC):
 
     # Repetir para as distribuições candidatas
     for distribution in dist_names:
+        
         # Configurando a distribuição e obtendo os parâmetros ajustados da distribuição
         dist = getattr(scipy.stats, distribution)
         param = dist.fit(x)
@@ -156,39 +169,39 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         Ft_ = dist.ppf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
 
         # Adicionando dados do trace
+        y.sort()
         t_Fe = y
 
 
         # Criando listas para armazenar as ECDFs
         Fe = []
         Fe_ = []
-
+        
+        # ecdf = np.array([12.0, 15.2, 19.3])  
+        arr_ecdf = np.empty(size)
+        arr_ecdf = [id+1 for id in range(size)]
+        arr_div = np.array(size) 
+        
         # Criando ECDFs
-        for i in range(1, len(y)+1):
+        # for i in range(0, size):
             # ecdf i-1/n
-            Fe.append((i-1)/len(y))
-            # ecdf i/n
-            Fe_.append(i/len(y))
+        Fe = (np.true_divide(arr_ecdf, size))
+    
+        arr_ecdf = np.subtract(arr_ecdf, 1)
 
+        Fe_ = (np.true_divide(arr_ecdf, size))
+        
         # Transformando listas em np.arrays()
         Fe = np.array(Fe)
         Fe_ = np.array(Fe_)
         Ft = np.array(Ft)
         Ft_ = np.array(Ft_)
-
-
-        # Ordenando dados
-        t_Fe.sort()
-        Ft.sort()
-        Ft_.sort()
-        Fe.sort()
-        Fe_.sort()
         
         # Inicio cálculo de rejeição
         #
         # Ft(t)-FE-(i),FE+(i)-Ft(t)
-        Ft_Fe_ = np.subtract(Ft, Fe_)
-        Fe_Ft = np.subtract(Fe, Ft)
+        Ft_Fe_ = abs(np.subtract(Fe_, Ft))
+        Fe_Ft = (np.subtract(Fe, Ft))
         
         # Max(Ft(t)-FE-(i),FE+(i)-Ft(t))
         Dobs_max = np.maximum(Ft_Fe_, Fe_Ft)
@@ -198,10 +211,10 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         #
         # Fim cálculo de rejeição
         
-        ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe)
+        # ks_statistic, D_critico = stats.ks_samp(t_Fe,Ft)
             
-        rejects, IC, D_critico = ksvalid(len(t_Fe), ks_statistic, IC)
-        # rejects, IC, D_critico = ksvalid(size, Dobs)
+        rejects, D_critico = ksvalid(size, Dobs, IC)
+        # rejects, D_critico = ksvalid(size, Dobs)
 
         
         # Imprimindo resultados do KS Test
@@ -209,7 +222,7 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         print("KS TEST:")
         print("Confidence degree: ", IC,"%")
         print("D observed: ", Dobs)
-        print("D observed(two samples): ", ks_statistic)
+        # print("D observed(two samples): ", ks_statistic)
         print("D critical: ", D_critico)
         print(rejects, " to  Real Trace (Manual-ks_statistic/D_critico)")
 
@@ -217,17 +230,17 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         
         a = np.around(a,4)
 
-        if p_value < a:
-            print("Reject - p-value: ", p_value, " is less wich alpha: ", a," (2samp)")
+        if D_critico < a:
+            print("Reject - p-value: ", D_critico, " is less wich alpha: ", a," (2samp)")
         else:
-            print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
+            print("Fails to Reject - p-value: ", D_critico, " is greater wich alpha: ", a," (2samp)")
         
         print(" ")
   
         # Obtém a estatística do teste KS e arredonda para 5 casas decimais
         Dobs = np.around(Dobs,  5)
-        # ks_values.append(Dobs)
-        ks_values.append(ks_statistic)    
+        ks_values.append(Dobs)
+        # ks_values.append(ks_statistic)    
 
         #
         # CHI-SQUARE
@@ -247,11 +260,12 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         expected_frequency = np.array(expected_frequency) * size
         cum_expected_frequency = np.cumsum(expected_frequency)
         ss = sum (((cum_expected_frequency - cum_observed_frequency) ** 2) / cum_observed_frequency)
-        chi_square.append(ss)
+        
 
         # Set x² with IC
-        IC = IC/100
-        x2 = chi2.ppf(IC, nbins-1)
+        # IC = IC/100
+        x2 = chi2.ppf(a, nbins-1)
+        chi_square.append(ss)
         
         # Imprimindo resultados do teste Chi-square
         print(" ")
@@ -274,20 +288,19 @@ def tcdf(y, parameter, case_study, save_graph, IC):
     results.sort_values(['ks_value'], inplace=True, ascending=True)
 
     # Apresentar os resultados em uma tabela
-    print ('\nDistributions sorted by KS Test of ',proto,'(',parameter,'):')
+    print ('Distributions sorted by KS Test of ',proto,'(',parameter,'):')
     print ('----------------------------------------')
     print (results)
-    print (proto," ",parameter," ",y[0:3])
+    print (proto, parameter)
+
+
     # Divida os dados observados em N posições para plotagem (isso pode ser alterado)
     bin_cutoffs = np.linspace(np.percentile(y,0), np.percentile(y,99), nbins)
 
     # Crie o gráfico
-    # if save_graph == True:
+    # if save_Graph == True:
     h = plt.hist(y, bins = bin_cutoffs, color='0.75')
     
-    if save_graph == False:
-        plt.clf()
-        plt.close()
     # Receba as principais distribuições da fase anterior 
     # e seleciona a quantidade de distribuições.
     number_distributions_to_plot = 1
@@ -307,13 +320,13 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         arg = param[:-2]
         loc = param[-2]
         scale = param[-1]
-        print(parameters)
+        # print(parameters)
 
         # Obter linha para cada distribuição (e dimensionar para corresponder aos dados observados)
-        pdf_fitted = dist.pdf(x, *param[:-2], loc=param[-2], scale=param[-1])
-        scale_pdf = np.trapz (h[0], h[1][:-1]) / np.trapz (pdf_fitted, x)
+        pdf_fitted = dist.pdf(x, *arg, loc=loc, scale=scale)
+        scale_pdf = np.trapz(h[0],h[1][:-1])/np.trapz(pdf_fitted, x)
         pdf_fitted *= scale_pdf
-        if save_graph == True:
+        if save_Graph == True:
             # Adicione a linha ao gráfico
             plt.plot(pdf_fitted, label=dist_name)
 
@@ -323,11 +336,8 @@ def tcdf(y, parameter, case_study, save_graph, IC):
             plt.title("Histogram of trace (" + parameter + ") + theorical distribuition " + dist_name)
     # Adicionar legenda
     plt.legend()
-    if save_graph == True:
-        if plot == "show":
-            plt.show()
-        if plot == "save":
-            plt.savefig("/home/carl/New_Results/Files/"+case_study+"_"+histogram+"_"+proto+"_tcdf_"+dist_name+"_"+parameter, fmt="png",dpi=1000)
+    if save_Graph == True:
+            plt.savefig("/home/carl/New_Results/Graphics/"+case_Study+"_histogram_"+proto+"_tcdf_("+dist_name+")_"+parameter, fmt="png",dpi=1000)
             plt.close()
     # Armazenar parâmetros de distribuição em um quadro de dados (isso também pode ser salvo)
     dist_parameters = pd.DataFrame()
@@ -336,12 +346,12 @@ def tcdf(y, parameter, case_study, save_graph, IC):
     dist_parameters['Distribution parameters'] = parameters
 
     # Printar os parâmetros
-    print ('\nDistribution parameters:')
+    print ('Distribution parameters:')
     print ('------------------------')
 
     for row in dist_parameters.iterrows():
-        print ('\nDistribution:', row[0])
-        print ('Parameters:', row[1] )
+        print ('Distribution:', row[0])
+        print ('Parameters:', row[1])
 
     
     # Plotando gráficos de inferência
@@ -381,14 +391,21 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         # Criando listas para armazenar as ECDFs
         Fe = []
         Fe_ = []
-
+        
+        # ecdf = np.array([12.0, 15.2, 19.3])  
+        arr_ecdf = np.empty(size)
+        arr_ecdf = [id_+1 for id_ in range(size)]
+        arr_div = np.array(size) 
+        
         # Criando ECDFs
-        for i in range(1, len(y)+1):
+        # for i in range(0, size):
             # ecdf i-1/n
-            Fe.append((i-1)/len(y))
-            # ecdf i/n
-            Fe_.append(i/len(y))
+        Fe = (np.true_divide(arr_ecdf, size))
+    
+        arr_ecdf = np.subtract(arr_ecdf, 1)
 
+        Fe_ = (np.true_divide(arr_ecdf, size))
+        
         # Transformando listas em np.arrays()
         Fe = np.array(Fe)
         Fe_ = np.array(Fe_)
@@ -398,8 +415,8 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         # Inicio cálculo de rejeição
         #
         # Ft(t)-FE-(i),FE+(i)-Ft(t)
-        Ft_Fe_ = np.subtract(Ft, Fe_)
-        Fe_Ft = np.subtract(Fe, Ft)
+        Ft_Fe_ = abs(np.subtract(Fe_, Ft))
+        Fe_Ft = (np.subtract(Fe, Ft))
         
         # Max(Ft(t)-FE-(i),FE+(i)-Ft(t))
         Dobs_max = np.maximum(Ft_Fe_, Fe_Ft)
@@ -409,66 +426,71 @@ def tcdf(y, parameter, case_study, save_graph, IC):
         #
         # Fim cálculo de rejeição
 
-        ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode='exact', alternative='less')
+        # ks_statistic, D_critico = stats.ks_2samp(Ft,t_Fe)
       
-        rejects, IC, D_critico = ksvalid(len(t_Fe), ks_statistic, IC)
+        rejects, D_critico = ksvalid(size, Dobs, IC)
         # rejects, IC, D_critico = ksvalid(size, Dobs)
 
-        
-        # Imprimindo resultados do KS Test
-        print(" ")
-        print("KS TEST:")
-        print("Confidence degree: ", IC,"%")
-        print("D observed: ", Dobs)
-        print("D observed(two samples): ", ks_statistic)
-        print("D critical: ", D_critico)
-        print(rejects, " to  Real Trace (Manual-ks_statistic/D_critico)")
-
-        a = 1-(IC/100)
-        
-        a = np.around(a,4)
-
-        if p_value < a:
-            print("Reject - p-value: ", p_value, " is less wich alpha: ", a," (2samp)")
+        if tcdf_First == True:
+            w = open("/home/carl/New_Results/Files/tcdf_results_"+parameter+".txt", "w")
+            w.write('"flow_Trace";"Distributions";"KS-Test";"Chi-Square";"Rejection"\n')
+            tcdf_First = False
         else:
-            print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
+            w = open("/home/carl/New_Results/Files/tcdf_results_"+parameter+".txt", "a")
+            w.write('"'+str(proto) + '";"' + str(dist_names) + '";"' + str(ks_values) + '";"' + str(chi_square) + '";"' + str(rejects) + '"\n')
+        w.close()
+        # Imprimindo resultados do KS Test
+        # print(" ")
+        # print("KS TEST:")
+        # print("Confidence degree: ", IC,"%")
+        # print("D observed: ", Dobs)
+        # # print("D observed(two samples): ", ks_statistic)
+        # print("D critical: ", D_critico)
+        # print(rejects, " to  Real Trace (Manual-ks_statistic/D_critico)")
+
+        # a = 1-(IC/100)
         
-        print(" ")
+        # a = np.around(a,4)
+
+        # if D_critico < a:
+        #     print("Reject - p-value: ", D_critico, " is less wich alpha: ", a," (2samp)")
+        # else:
+        #     print("Fails to Reject - p-value: ", D_critico, " is greater wich alpha: ", a," (2samp)")
+        
+        # print(Fe_)
 
         # Plotando resultados do teste KS
-        if save_graph == True:
+        if save_Graph == True:
             plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
-            plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
+            plt.plot(t_Fe, Fe_, 'o', label='Empirical Distribution')
             
+            # plt.plot(Ft, Fe, 'o', label='Teorical Distribution')
+            # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
             
-            # plt.plot(t_Fe, Fe, 'o', label='Real Trace')
-            # plt.plot(Ft, Fe, 'o', label='Syntatic Trace')
             # Definindo titulo
             plt.title("KS Test of Real Trace of "+proto+" with " + distribution + " Distribution (" + parameter + ")")
             plt.legend()
-            if save_Plot == True:
-            #     plt.show()
-            # if plot == "save":
-                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_kstest_tcdf_"+proto+"_"+distribution+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
+            
+            plt.savefig("/home/carl/New_Results/Graphics/"+case_Study+"_valid-ks_test_"+proto+"_tcdf_("+distribution+")_"+parameter, fmt="png",dpi=1000)
+            plt.close()
      
-        return dist_name, loc, scale, arg
+        return dist_name, loc, scale, arg, tcdf_First
 
-def tcdf_generate(dist, loc, scale, arg, parameter):
+def tcdf_generate(dist, loc, scale, arg, parameter, size):
     # Setar distribuição escolhida.
     dist_name = getattr(scipy.stats, dist)
 
     # Gerar número aleatório de acordo com a distribuição escolhida e seus parametros.
-    r_N = dist_name.rvs(loc=loc, scale=scale, *arg)
+    r_N = dist_name.rvs(loc=loc, scale=scale, *arg, size=size)
 
     # Condição para retorno do valor de acordo com o parametro de rede.
-    if parameter == "Size":
+    if parameter == "size":
         # print("SIZE R_N:", r_N)
-        return(int(abs(r_N)))
+        return r_N.astype(int)
 
-    if parameter == "Time":
+    if parameter == "time":
         # print("TIME R_N:", r_N)
-        return(float(abs(r_N)))
+        return r_N.astype(float)
 
 # Função de geração de variáveis aleatórias de acordo com distribuições 
 # de probabilidade e parametros definidos
@@ -479,7 +501,7 @@ def PD(parameter, const_Size):
     # global size_request
     # global time_request
     r_N = []
-    if parameter == "Size":
+    if parameter == "size":
         if const_Size == False:
         # Selecionando distribuição de probabilidade para o parametro Size
             dist_name = 'uniform'
@@ -494,7 +516,7 @@ def PD(parameter, const_Size):
         # size_request = True
        
 
-    if parameter == "Time":
+    if parameter == "time":
        # Selecionando distribuição de probabilidade para o parametro Size
         dist_name = 'uniform'
         # Definindo parametros da distribuição
@@ -509,17 +531,36 @@ def PD(parameter, const_Size):
     return(r_N)
 
 def ecdf(y, parameter, proto):
-
+    size = len(y)
     # Criando listas para os dados utilizados
     Fx = []
     Fx_ = []
+    
+    Fe = []
+    Fe_ = []
+    
+    # ecdf = np.array([12.0, 15.2, 19.3])  
+    arr_ecdf = np.empty(size)
+    arr_ecdf = [x+1 for x in range(size)]
+    arr_div = np.array(size) 
+    
+    # Criando ECDFs
+    # for i in range(0, size):
+    # ecdf i-1/n
+    Fx = (np.true_divide(arr_ecdf, size))
+    # print(len(Fx))
+    arr_ecdf = np.subtract(arr_ecdf, 1)
+
+    Fx_ = (np.true_divide(arr_ecdf, size))
+    # print(len(Fx_))
     # Realizando ajustes para os vetores que selecionaram os valores gerados
-    for i in range(0, len(y)):
-        Fx.append(i/(len(y)+1))
-        if i != 0:
-            Fx_.append(i/(len(y)+1))
+    # for i in range(0, len(y)):
+    #     Fx.append(i/(len(y)+1))
+    #     print(Fx)
+    #     if i != 0:
+    #         Fx_.append(i/(len(y)+1))
     # Adicionando 1 no vetor Fx_
-    Fx_.append(1)    
+    Fx_[:-1]=1    
 
     # print ("Fx: ", len(Fx))
     # print ("Fx_: ", len(Fx_))
@@ -544,10 +585,10 @@ def ecdf(y, parameter, proto):
     return r_N
 
 # Função de definição da aplicação HTTP
-def read_filter(const_Size, type_Size, save_graph, case_study):
+def read_filter(const_Size, type_Size, save_Graph, case_Study):
     # global const_Size
     first = True                                                    
-    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocols"])
+    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols"])
     
     # print(txt_df)
     # txt_df = txt_df[txt_df.Size > 0]
@@ -565,7 +606,8 @@ def read_filter(const_Size, type_Size, save_graph, case_study):
         # print(proto)
         # print(data_df)
     
-        t_Time = np.array(data_df["Time"])
+        t_Time = np.array(data_df["time"])
+        t_Time.sort()
         # print(t_Time)
         sub = []
         if len(t_Time) > 1:
@@ -582,29 +624,29 @@ def read_filter(const_Size, type_Size, save_graph, case_study):
             t_Time.sort()
 
             # Plot histograma t_time:
-            plot_histogram(t_Time, save_graph, "Time", case_study, proto)
+            plot_histogram(t_Time, save_Graph, "time", case_Study, proto)
 
-        np.savetxt('/home/carl/New_Results/Files/'+case_study+'_flow_'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
+        np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_flow_'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
 
         if const_Size == False:
             # Plot histograma t_time:
-            # print(data_df["Size"])
-            plot_histogram(data_df["Size"], save_graph, "Size", case_study, proto)
+            # print(data_df["size"])
+            plot_histogram(data_df["size"], save_Graph, "size", case_Study, proto)
             if len(t_Time) > 1:
-                np.savetxt('/home/carl/New_Results/Files/'+case_study+'_flow_'+proto+'_size.txt', data_df["Size"], delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_flow_'+proto+'_size.txt', data_df["size"], delimiter=',', fmt='%f')
             
         else:
 
             if type_Size == "mean_Trace":
-                size = np.mean(data_df["Size"])
+                size = np.mean(data_df["size"])
             if type_Size == "const_Value":
                 size = 500
             
             
-            arr_Size = np.empty(len(data_df["Size"])-1)
-            arr_Size = [size for x in range(len(data_df["Size"]))]
+            arr_Size = np.empty(len(data_df["size"])-1)
+            arr_Size = [size for x in range(len(data_df["size"]))]
             if len(t_Time) > 1:
-                np.savetxt('/home/carl/New_Results/Files/'+case_study+'_flow_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_flow_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
         
         
         
@@ -623,19 +665,147 @@ def read_filter(const_Size, type_Size, save_graph, case_study):
 
             # lista = list(proto, size)
             # param_df = pd.DataFrame({'flows': [proto], 'len': [size]})
-            # param_df = pd.Dataframe(float(len(data_df["Size"])), "")
+            # param_df = pd.Dataframe(float(len(data_df["size"])), "")
             # param_df.to_csv('/home/carl/New_Results/Files/list_tr_size.txt')
 
         # np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', param_df, delimiter=',', fmt='%f')
-        # timeStopSimulation =  time_resp_df["Time"].iloc[-1]
+        # timeStopSimulation =  time_resp_df["time"].iloc[-1]
         # print(timeStopSimulation)
-        # nRequestPackets = len(time_req_df["Time"])
-        # nResponsePackets = len(time_resp_df["Time"])
+        # nRequestPackets = len(time_req_df["time"])
+        # nResponsePackets = len(time_resp_df["time"])
     return arr_protocols
 
 
 
+def kstest():
+    y = [142.773, 146.217, 147.676, 147.740, 149.016, 149.105, 150.476, 151.284, 151.461, 151.763, 151.932, 154.519, 154.632, 154.789, 155.008, 155.325, 155.402, 155.506, 155.545, 155.561, 155.581, 155.584, 155.701, 156.115, 156.340, 156.851, 156.879, 157.044, 157.404, 157.435, 157.573, 157.599, 157.688, 157.717, 157.858, 158.033, 158.154, 158.387, 158.475, 159.068, 159.215, 159.234, 159.366, 159.499, 159.576, 159.601, 159.767, 159.824, 159.978, 160.036, 160.289, 160.289, 160.327, 160.430, 160.496, 160.519, 160.719, 160.745, 160.942, 161.341, 161.438, 161.683, 161.767, 161.865, 162.064, 162.289, 162.302, 162.711, 162.752, 162.855, 162.866, 162.884, 162.918, 162.947, 163.136, 164.080, 164.138, 164.479, 164.524, 164.566, 164.850, 164.965, 165.000, 165.292, 165.397, 165.408, 165.538, 165.997, 166.311, 166.327, 166.367, 166.671, 167.214, 167.690, 168.178, 170.181, 170.633, 171.434, 173.424, 179.891]
+    y.sort()
+    # Set up distribution
+    size = len(y)
+    distribution = 'norm'
+    dist = getattr(scipy.stats, distribution)
+    param = dist.fit(y)
+    print(param)
+  
+
+    #
+    # KS TEST
+    #
+    # Criando percentil
+    percentile = np.linspace(0,100,len(y))
+    percentile_cut = np.percentile(y, percentile)
+    
+    # Criando CDF da teórica
+    Ft = dist.cdf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
+    
+    
+    # Criando CDF Inversa 
+    Ft_ = dist.ppf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
+    
+    # Adicionando dados do trace
+    t_Fe = y
+
+    # Ordenando dados
+    t_Fe.sort()
+    Ft.sort()
+    Ft_.sort()
+
+    # Criando listas para armazenar as ECDFs
+    Fe = []
+    Fe_ = []
+    
+    # ecdf = np.array([12.0, 15.2, 19.3])  
+    arr_ecdf = np.empty(size)
+    arr_ecdf = [x+1 for x in range(size)]
+    arr_div = np.array(size) 
+    
+    # Criando ECDFs
+    # for i in range(0, size):
+        # ecdf i-1/n
+    Fe = (np.true_divide(arr_ecdf, size))
+  
+    arr_ecdf = np.subtract(arr_ecdf, 1)
+
+    Fe_ = (np.true_divide(arr_ecdf, size))
+    
+    # Transformando listas em np.arrays()
+    Fe = np.array(Fe)
+    Fe_ = np.array(Fe_)
+    Ft = np.array(Ft)
+    Ft_ = np.array(Ft_)
+    
+    # Inicio cálculo de rejeição
+    #
+    # Ft(t)-FE-(i),FE+(i)-Ft(t)
+    Ft_Fe_ = abs(np.subtract(Fe_, Ft))
+    Fe_Ft = (np.subtract(Fe, Ft))
+    
+    # Max(Ft(t)-FE-(i),FE+(i)-Ft(t))
+    Dobs_max = np.maximum(Ft_Fe_, Fe_Ft)
+    
+    # Dobs= Max(Max (Ft(t)-FE-(i),FE+(i)-Ft(t)))
+    Dobs = np.max(Dobs_max)
+    #
+    # Fim cálculo de rejeição
+
+    # Definir intervalo de confiança
+    # IC = 99.90 -> alpha = 0.10
+    # IC = 99.95 -> alpha = 0.05
+    # IC = 99.975 -> alpha = 0.025
+    # IC = 99.99 -> alpha = 0.01
+    # IC = 99.995 -> alpha = 0.005
+    # IC = 99.999 -> alpha = 0.001
+    IC = 99.95        
+    # Condição para definir o D_critico de acordo com o tamanho dos dados
+    if size > 35:
+        if IC == 99.90:
+            D_critico = 1.22/np.sqrt(len(y))
+        
+        if IC == 99.95:
+            D_critico = 1.36/np.sqrt(len(y))
+        
+        if IC == 99.975:
+            D_critico = 1.48/np.sqrt(len(y))
+        
+        if IC == 99.99:
+            D_critico = 1.63/np.sqrt(len(y))
+        
+        if IC == 99.995:
+            D_critico = 1.73/np.sqrt(len(y))
+        if IC == 99.999:
+            D_critico = 1.95/np.sqrt(len(y))
+
+        # Condição para aceitar a hipótese nula do teste KS
+        if Dobs > D_critico:
+            rejects = "Reject the Null Hypothesis"
+        else:
+            rejects = "Fails to Reject the Null Hypothesis"
+
+    # Imprimindo resultados do KS Test
+    print("KS TEST:")
+    print("Confidence degree: ", IC,"%")
+    print(rejects, " of ", distribution)
+    print("D observed: ", Dobs)
+    print("D critical: ", D_critico)
+    print(" ")
+
+    # print("T_FE: ", t_Fe)
+    # print("FT: ", Ft)
+    # print("FE: ", Fe)
+    # Plotando resultados do teste KS
+    plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
+    plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
+    
+    
+    # plt.plot(t_Fe, Fe, 'o', label='Real Trace')
+    # plt.plot(Ft, Fe, 'o', label='Syntatic Trace')
+    # Definindo titulo
+    plt.title("KS Test of Real Trace with " + distribution + " Distribution")
+    plt.legend()
+    plt.show() 
+    
 def main(argv):
+    # kstest()
     #
     # Filtro e criação de arquivos
     #
@@ -643,13 +813,13 @@ def main(argv):
     const_Size = True
     # Tipo de tamanho de pacote: "const_Value"(Valor específico) | "mean_Trace"(Usa a média do tamanho dos pacotes do trace)
     type_Size = "const_Value"
-    save_graph = True
-    # parameters = ["Size", "Time"]
-    case_study = "http"
+    save_Graph = True
+    # parameters = ["size", "time"]
+    case_Study = "http"
     # "99.80%";"99.85%";"99.90%";"99.95%";"99.99%"
-    IC="95.0"
+    IC=95.0
     # Chamada da função de filtro do trace e criação de arquivos com os parametros da rede
-    arr_protocols = read_filter(const_Size, type_Size, save_graph, case_study)
+    arr_protocols = read_filter(const_Size, type_Size, save_Graph, case_Study)
 
     #
     # Criação das variáveis aleatórias
@@ -661,41 +831,49 @@ def main(argv):
     mt_RG = "tcdf"
     # Definindo os parametros de tempo(Time) e tamanho(Size)
     parameters = ["size", "time"]
+    tcdf_First = True
 
     for proto in arr_protocols:
         for parameter in parameters:
-            # txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocols"])
-            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+case_study+"_flow_"+proto+"_"+parameter+".txt", usecols=0)
-            print(str("flow_"+proto+"_"+parameter+".txt"))
+            aux_Packet = 0
+            # txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols"])
+            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_flow_"+proto+"_"+parameter+".txt", usecols=0)
             filter_Trace = np.array(filter_Trace)
             # print(filter_Trace)
             # filter_Trace.sort()
-            size_Trace = len(filter_Trace)
+            # size_Trace = len(filter_Trace)
 
             # Condição de escolha do método de geração de variáveis aleatórias 
             # diretamente por uma distribuição de probabiidade
             if mt_RG == "PD":
                 # Chamando a função PD() e retornando valor gerado para uma variável auxiliar
                 aux_Packet = PD(parameter, const_Size)
-             
-            # Condição de escolha do método por distribuições teórica equivalentes aos dados do trace
-            if mt_RG == "tcdf":
-                # Condição de chamada única da função tcdf()
-                # Chamando a função tcdf para definir a distribuição de probabilidade compatível ao trace e 
-                # seus respectivos parametros para geração de números aleatórios
-                dist_name, loc, scale, arg = tcdf(filter_Trace, parameter, case_study, save_graph, IC)
+                # Salvando arquivos de variáveis aleatórias
+                np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+            
+            if parameter == "time" or const_Size == False:
+                # Condição de escolha do método por distribuições teórica equivalentes aos dados do trace
+                if mt_RG == "tcdf":
+                    # Condição de chamada única da função tcdf()
+                    # Chamando a função tcdf para definir a distribuição de probabilidade compatível ao trace e 
+                    # seus respectivos parametros para geração de números aleatórios
+                    dist_name, loc, scale, arg, tcdf_First = tcdf(filter_Trace, parameter, case_Study, save_Graph, IC, proto, tcdf_First)
 
-                # Chamando a função tcdf_generate e retornando valor gerado para uma variável auxiliar
-                aux_Packet = tcdf_generate(dist_name, loc, scale, arg, parameter)
+                    # Chamando a função tcdf_generate e retornando valor gerado para uma variável auxiliar
+                    aux_Packet = tcdf_generate(dist_name, loc, scale, arg, parameter, len(filter_Trace))
+                    # Salvando arquivos de variáveis aleatórias
+                    np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+            
 
-            # Condição de escolha do método pela distribuição empírica dos dados do trace
-            if mt_RG == "ecdf":
-                # Chamando a função ecdf e retornando valor gerado para uma variável auxiliar
-                aux_Packet = ecdf(filter_Trace, parameter, proto)
-                    
-                    
-            # Salvando arquivos de variáveis aleatórias
-            np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+                # Condição de escolha do método pela distribuição empírica dos dados do trace
+                if mt_RG == "ecdf":
+                    # Chamando a função ecdf e retornando valor gerado para uma variável auxiliar
+                    aux_Packet = ecdf(filter_Trace, parameter, proto)
+                    # Salvando arquivos de variáveis aleatórias
+                    np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+            
+                        
+                        
             
 
 if __name__ == '__main__':
