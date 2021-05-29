@@ -36,7 +36,7 @@ file_Simulation="simulation"
 # Copy file to scratch
 cp C++/${file_Simulation}.cc ${dir_NS3}scratch
 # # Set permissions to file in scratch
-chmod 777 ${dir_NS3}scratch/${file_Simulation}.cc
+sudo chmod 777 ${dir_NS3}scratch/${file_Simulation}.cc
 
 # Open NS3 directory
 cd ${dir_NS3} 

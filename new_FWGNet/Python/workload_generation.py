@@ -31,7 +31,7 @@ def read_txt(parameter, traffic, app_protocol):
         global first_trace_time
      
         # Abrindo arquivos .txt
-        t_time = np.loadtxt("scratch/"+app_protocol+"_time.txt", usecols=0)
+        t_time = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_time.txt", usecols=0)
         t_time.sort()
         # Obtendo os tempos entre pacotes do trace
         sub = []
@@ -86,7 +86,7 @@ def read_txt(parameter, traffic, app_protocol):
         global first_trace_size
 
         # Abrindo arquivos .txt
-        t_size = np.loadtxt("scratch/"+app_protocol+"_size.txt", usecols=0)
+        t_size = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_size.txt", usecols=0)
         t_size = t_size.astype(float)
         t_size = np.array(t_size)
         
@@ -110,7 +110,7 @@ def read_txt(parameter, traffic, app_protocol):
         global first_req_trace_time
 
         # Abrindo arquivos .txt
-        req_t_time = np.loadtxt("scratch/"+app_protocol+"_req_time.txt", usecols=0)
+        req_t_time = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_req_time.txt", usecols=0)
         req_t_time.sort()
         # Obtendo os tempos entre pacotes do trace
         sub = []
@@ -150,7 +150,7 @@ def read_txt(parameter, traffic, app_protocol):
         global first_req_trace_size
 
         # Abrindo arquivos .txt
-        req_t_size = np.loadtxt("scratch/"+app_protocol+"_req_size.txt", usecols=0)
+        req_t_size = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_req_size.txt", usecols=0)
         req_t_size = req_t_size.astype(float)
         req_t_size = np.array(req_t_size)
         if np.mean(req_t_size) == req_t_size[0]: 
@@ -181,7 +181,7 @@ def read_txt(parameter, traffic, app_protocol):
         global first_resp_trace_time
 
         # Abrindo arquivos .txt
-        resp_t_time = np.loadtxt("scratch/"+app_protocol+"_resp_time.txt", usecols=0)
+        resp_t_time = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_resp_time.txt", usecols=0)
         resp_t_time.sort()
         # Obtendo os tempos entre pacotes do trace
         sub = []
@@ -222,7 +222,7 @@ def read_txt(parameter, traffic, app_protocol):
         global first_resp_trace_size
 
         # Abrindo arquivos .txt
-        resp_t_size = np.loadtxt("scratch/"+app_protocol+"_resp_size.txt", usecols=0)
+        resp_t_size = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_resp_size.txt", usecols=0)
         resp_t_size = resp_t_size.astype(float)
         resp_t_size = np.array(resp_t_size)
 
@@ -1002,68 +1002,86 @@ def ecdf(y, parameter, traffic):
 
         w.write("\n" + str(r_N) + "\n")
         w.close()
-        # np.savetxt('scratch/'+'ecdf_'+app_protocol+'_time_req_ns3.txt', time_req_ns3, delimiter=',', fmt='%f')
+        # np.savetxt('/home/carl/New_Results/Files/'+'ecdf_'+app_protocol+'_time_req_ns3.txt', time_req_ns3, delimiter=',', fmt='%f')
         return(abs(r_N))
 
 
 # Função de definição da aplicação HTTP
-def read_filter():
-    global const_Size
+def read_filter(const_Size, type_Size):
+    # global const_Size
                                                              
-    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocol"])
-    print(txt_df)
-    txt_df = txt_df[txt_df.Size > 0]
+    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocols"])
+    # print(txt_df)
+    # txt_df = txt_df[txt_df.Size > 0]
 
     # Agrupar dados do framework por protocol
     # Criar os arquivos de acordo com os protocolos diferentes
-    # arr_column = df['protocols'].to_numpy()
+    arr_protocols = list(set( txt_df["protocols"]))
+    
+    # print(arr_protocols)
     # Cria valores só pra um valor da coluna 
-    # for proto in arr_column:
-        # print(txt_df.loc[df['protocols'] == str(proto)])
+    for proto in arr_protocols:
+        # txt_df[] = txt_df.loc[txt_df['protocols'] == str(eth:ethertype:ip:tcp)]
+        time_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
+        # print(time_df)
+    
 
-    time_req_df = txt_df[txt_df['req_resp'].str.contains("GET")]
+
+
+
+    # time_req_df = txt_df[txt_df['req_resp'].str.contains("GET")]
     # time_req_df["Time"] = time_req_df["Time"].apply(pd.to_numeric)
     # print(time_req_df)
-    time_resp_df = txt_df[txt_df['req_resp'].str.contains("OK")]
+    # time_resp_df = txt_df[txt_df['req_resp'].str.contains("OK")]
     # print(time_resp_df)
     # time_resp_df["Time"] = time_resp_df["Time"].apply(pd.to_numeric)
     
-    np.savetxt('scratch/'+app_protocol+'_resp_time.txt', time_resp_df["Time"], delimiter=',', fmt='%f')
-    np.savetxt('scratch/'+app_protocol+'_req_time.txt', time_req_df["Time"], delimiter=',', fmt='%f')
-   
-    if const_Size == "False":
-    # Abrindo arquivos .txt
-        size_req_df = txt_df[txt_df['req_resp'].str.contains("GET")]
-        # size_req_df["Size"] = size_req_df["Size"].apply(pd.to_numeric)
+        np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_time.txt', time_df["Time"], delimiter=',', fmt='%f')
+    # np.savetxt('/home/carl/New_Results/Files/'+app_protocol+'_req_time.txt', time_req_df["Time"], delimiter=',', fmt='%f')
+        size_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
+        if const_Size == False:
+        # Abrindo arquivos .txt
+            
+            # size_req_df["Size"] = size_req_df["Size"].apply(pd.to_numeric)
 
-        size_resp_df = txt_df[txt_df['req_resp'].str.contains("HTTP/1.1")]
-        # size_resp_df["Size"] = size_resp_df["Size"].apply(pd.to_numeric)
-        size_req_df.round(5)
-        size_resp_df.round(5)
-        np.savetxt('scratch/'+app_protocol+'_req_size.txt', size_req_df["Size"], delimiter=',', fmt='%f')
-        np.savetxt('scratch/'+app_protocol+'_resp_size.txt', size_resp_df["Size"], delimiter=',', fmt='%f')
+            # size_resp_df = txt_df[txt_df['req_resp'].str.contains("HTTP/1.1")]
+            # size_resp_df["Size"] = size_resp_df["Size"].apply(pd.to_numeric)
+            # size_req_df.round(5)
+            # size_df.round(5)
+            np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', size_df["Size"], delimiter=',', fmt='%f')
+            # np.savetxt('/home/carl/New_Results/Files/'+app_protocol+'_resp_size.txt', size_resp_df["Size"], delimiter=',', fmt='%f')
+        else:
+            # size_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
+            
+            if type_Size == "mean_Trace":
+                size = np.mean(size_df["Size"])
+            if type_Size == "const_Value":
+                size = 500
+            
+            
+            arr_Size = np.empty(len(size_df["Size"])-1)
+            arr_Size = [size for x in range(len(size_df["Size"])-1)]
+
+            np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+        # timeStopSimulation =  time_resp_df["Time"].iloc[-1]
+        # print(timeStopSimulation)
+        # nRequestPackets = len(time_req_df["Time"])
+        # nResponsePackets = len(time_resp_df["Time"])
     
-    timeStopSimulation =  time_resp_df["Time"].iloc[-1]
-    print(timeStopSimulation)
-    nRequestPackets = len(time_req_df["Time"])
-    nResponsePackets = len(time_resp_df["Time"])
-    
-    return timeStopSimulation, nRequestPackets, nResponsePackets
+
 
 
 def main(argv):
-    read_filter()
+    # Determina se os tamanhos de pacotes serão constantes caso True ou se seguirão o padrão do trace caso False
+    const_Size = True
+    # Tipo de tamanho de pacote: "const_Value"(Valor específico) | "mean_Trace"(Usa a média do tamanho dos pacotes do trace)
+    type_Size = "const_Value"
+
+    read_filter(const_Size, type_Size)
 
     # traffic = "send"
     # parameter = "Size"
 
-    # # Defininfo se o pacote é constante
-    # if const_Size == "True":
-    #     if mt_const == "Trace" and first_trace_size == 0:
-    #         read_txt(parameter, traffic, app_protocol)
-    #     aux_packet = constSize(traffic, app_protocol)
-    #     packet = ns.network.Packet(aux_packet)
-    # else:
     #     # Condição de escolha do método de geração de variáveis aleatórias 
     #     # diretamente por uma distribuição de probabiidade
     #     if mt_RG == "PD":
