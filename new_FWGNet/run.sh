@@ -16,7 +16,7 @@ fi
 if [[ $get_pcap = "False" ]]
 then
     # .pcap file directory
-    dir_pcap_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-1/small-tcp-http.pcap"
+    dir_pcap_file="/media/carl/95d90125-d7fb-4efd-8875-ceead818ba80/Traces/Case-Study-1/http-p2p.pcap"
     export dir_pcap_file
     # Start filter module (real .pcap file)
     ./Shell/filter.sh

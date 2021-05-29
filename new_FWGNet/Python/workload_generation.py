@@ -6,11 +6,11 @@ import numpy as np
 import scipy
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
-# import seaborn as sns
-# import statsmodels as sm
+import seaborn as sns
+import statsmodels as sm
 import scipy.stats as stats
 # from statsmodels.distributions.empirical_distribution import ECDF
-import matplotlib as plt
+import matplotlib.pyplot as plt
 import os
 import io
 import subprocess
@@ -21,237 +21,73 @@ import random
 from matplotlib.ticker import FixedLocator, FixedFormatter
 
 
-# Função de leitura dos traces e atribuição dos respectivos dados aos vetores
-def read_txt(parameter, traffic, app_protocol): 
-    global plot_graph
-    global t_net
-    if parameter == "Time" and traffic == "send":
-        # Chamando variáveis globais
-        global t_time
-        global first_trace_time
-     
-        # Abrindo arquivos .txt
-        t_time = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_time.txt", usecols=0)
-        t_time.sort()
-        # Obtendo os tempos entre pacotes do trace
-        sub = []
+def ksvalid(size, Dobs, IC):
+    # Definir intervalo de confiança
+    # IC = 99.90 -> alpha = 0.10
+    # IC = 99.95 -> alpha = 0.05
+    # IC = 99.975 -> alpha = 0.025
+    # IC = 99.99 -> alpha = 0.01
+    # IC = 99.995 -> alpha = 0.005
+    # IC = 99.999 -> alpha = 0.001
+    
+    
+    D_critico = 0
+    rejects = ""
+    IC = str(IC)+"%"
+    # print("IC: ", IC)
+    if (size<=35):
+        ks_df = pd.read_csv("/home/carl/New_Results/Files/kstest.txt", sep=";")
+        # ks_df = ks_df[ks_df['Size'].str.contains(""+size+"")]
+        # print(ks_df)
+        D_critico = ks_df[""+IC+""].iloc[size-1]
         
-        for i in range(0,len(t_time)-1):
-            sub.append(t_time[i+1] - t_time[i])
+    else:
+        # Condição para definir o D_critico de acordo com o tamanho dos dados
+        if IC == "99.80%":
+            D_critico = 1.07/np.sqrt(size)
+        if IC == "99.85%":
+            D_critico = 1.14/np.sqrt(size)
+        if IC == "90.0%":
+            D_critico = 1.224/np.sqrt(size)
+        if IC == "95.0%":
+            D_critico = 1.358/np.sqrt(size)
+        if IC == "99.0%":
+            D_critico = 1.628/np.sqrt(size)
+    
+    D_critico = np.around(D_critico, 2)
+    # 0.20"	;	       "0.15"	;	 "0.10"	;	 "0.05"	;	     "0.01"
+    # "1.07/sqrt(n)";"1.14/sqrt(n)";"1.22/sqrt(n)";"1.36/sqrt(n)";"1.63/sqrt(n)"
+
+    # Condição para aceitar a hipótese nula do teste KS
+    if Dobs > D_critico:
+        rejects = "Reject the Null Hypothesis"
+    else:
+        rejects = "Fails to Reject the Null Hypothesis"
+    
+    # IC = IC[:-1]
+    IC = IC.replace('%', '')
+    # print("IC: ", IC)
+    return rejects, float(IC), D_critico
+
+
+
+def plot_histogram(y, save_graph, parameter, case_study, proto):
+    if save_graph == True:
+        fig, ax = plt.subplots(1, 1)
+        ax = sns.distplot(y)
+        plt.title("Histogram of flow "+proto+" ("+parameter+")")
+        fig.savefig("/home/carl/New_Results/Files/"+case_study+"_histogram_"+proto+"_hist_"+parameter, fmt="png",dpi=1000)
+        plt.close()
+
+    # if plot == "show":
+    #     plt.show()
+    # if plot == "save":
         
-        # Passando valores resultantes para a variável padrão t_time
-        # sub.remove("0\n")
-        # sub.sort()
-        
-        t_time = np.array(sub)
-        t_time = t_time.astype(float)
-        
-        # aux = t_time.where(0)
-        # t_time.remove(aux)
-
-        t_time = np.delete(t_time, np.where(t_time == 0))
-        t_time.sort()
-
-        # np.delete(t_time, 0)
-        # t_time = sorted(t_time, reverse=True)
-        # print("Trace Time: ", t_time[0:20])
-        
-        # t_time = np.around(t_time, 2)
-        # print("t_time:", len(t_time))
-
-
-        # Plot histograma t_time:
-        # plt.hist(t_time)
-        if plot_graph == True:
-            fig, ax = plt.subplots(1, 1)
-            ax = sns.distplot(t_time)
-            plt.title("Histogram of trace "+traffic+" ("+parameter+")")
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
-        
-
-        # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
-        # t_time_df = pd.DataFrame(t_time, columns=['Time'])
-        # t_time_df.describe()
-
-        # Definindo que o parametro time pode ser lido apenas uma vez.
-        first_trace_time = 1     
-
-    if parameter == "Size" and traffic == "send":
-        # Chamando variáveis globais
-        global t_size
-        global first_trace_size
-
-        # Abrindo arquivos .txt
-        t_size = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_size.txt", usecols=0)
-        t_size = t_size.astype(float)
-        t_size = np.array(t_size)
-        
-        # Plot histograma t_size:
-        # plt.hist(t_size)
-        if plot_graph == True:
-            fig, ax = plt.subplots(1, 1)
-            ax = sns.distplot(t_size)
-            plt.title("Histogram of trace "+traffic+" ("+parameter+")")
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
-        # Definindo que o parametro time pode ser lido apenas uma vez.
-        first_trace_size = 1 
-        
-    if parameter == "Time" and traffic == "request":
-        # Chamando variáveis globais
-        global req_t_time
-        global first_req_trace_time
-
-        # Abrindo arquivos .txt
-        req_t_time = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_req_time.txt", usecols=0)
-        req_t_time.sort()
-        # Obtendo os tempos entre pacotes do trace
-        sub = []
-        
-        for i in range(0, len(req_t_time)-1):
-            sub.append(req_t_time[i+1] - req_t_time[i])
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        req_t_time = np.array(sub)
-        req_t_time = req_t_time.astype(float)
-        
-        req_t_time = np.delete(req_t_time, np.where(req_t_time == 0))
-        req_t_time.sort()
-        # print("Trace Time Request: ", req_t_time)
-        # print("req_t_time:", req_t_time)
-        # Plot histograma req_t_time:
-        # plt.hist(req_t_time)
-        if plot_graph == True:
-            fig, ax = plt.subplots(1, 1)
-            ax = sns.distplot(req_t_time)
-            plt.title("Histogram of trace "+traffic+" ("+parameter+")")
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
-        # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
-        # req_t_time_df = pd.DataFrame(req_t_time, columns=['Time'])
-        # req_t_time_df.describe()
-
-        # Definindo que o parametro time pode ser lido apenas uma vez.
-        first_req_trace_time = 1     
-
-    if parameter == "Size" and traffic == "request":
-        # Chamando variáveis globais
-        global req_t_size
-        global first_req_trace_size
-
-        # Abrindo arquivos .txt
-        req_t_size = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_req_size.txt", usecols=0)
-        req_t_size = req_t_size.astype(float)
-        req_t_size = np.array(req_t_size)
-        if np.mean(req_t_size) == req_t_size[0]: 
-            req_t_size[0] = req_t_size[0]-1
-        # Plot histograma req_t_size:
-        # plt.hist(req_t_size)
-        if plot_graph == True:
-            fig, ax = plt.subplots(1, 1)
-            ax = sns.distplot(req_t_size)
-            plt.title("Histogram of trace "+traffic+" ("+parameter+")")
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
-        
-
-        # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
-        # req_t_size_df = pd.DataFrame(req_t_size, columns=['size'])
-        # req_t_size_df.describe()
-
-        # Definindo que o parametro size pode ser lido apenas uma vez.
-        first_req_trace_size = 1     
-
-    if parameter == "Time" and traffic == "response":
-        # Chamando variáveis globais
-        global resp_t_time
-        global first_resp_trace_time
-
-        # Abrindo arquivos .txt
-        resp_t_time = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_resp_time.txt", usecols=0)
-        resp_t_time.sort()
-        # Obtendo os tempos entre pacotes do trace
-        sub = []
-        
-        for i in range(0, len(resp_t_time)-1):
-            sub.append(resp_t_time[i+1] - resp_t_time[i])
-        
-        # Passando valores resultantes para a variável padrão resp_t_time
-        resp_t_time = np.array(sub)
-        resp_t_time = resp_t_time.astype(float)
-        
-        resp_t_time = np.delete(resp_t_time, np.where(resp_t_time == 0))
-        resp_t_time.sort()
-        # print("Trace Time Response: ", resp_t_time)
-        # print("req_t_time:", req_t_time)
-        # Plot histograma resp_t_time:
-        # plt.hist(resp_t_time)
-        if plot_graph == True:
-            fig, ax = plt.subplots(1, 1)
-            ax = sns.distplot(resp_t_time)
-            plt.title("Histogram of trace "+traffic+" ("+parameter+")")
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
-
-        # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
-        # resp_t_time_df = pd.DataFrame(resp_t_time, columns=['Time'])
-        # resp_t_time_df.describe()
-
-        # Definindo que o parametro time pode ser lido apenas uma vez.
-        first_resp_trace_time = 1     
-  
-    if parameter == "Size" and traffic == "response":
-        # Chamando variáveis globais
-        global resp_t_size
-        global first_resp_trace_size
-
-        # Abrindo arquivos .txt
-        resp_t_size = np.loadtxt("/home/carl/New_Results/Files/"+app_protocol+"_resp_size.txt", usecols=0)
-        resp_t_size = resp_t_size.astype(float)
-        resp_t_size = np.array(resp_t_size)
-
-        # if np.mean(resp_t_size) == resp_t_size[1]: 
-        #     resp_t_size[0] = resp_t_size[0]-1
-        # Plot histograma resp_t_size:
-        # plt.hist(resp_t_size)
-        if plot_graph == True:
-            fig, ax = plt.subplots(1, 1)
-            ax = sns.distplot(resp_t_size)
-            plt.title("Histogram of trace "+traffic+" ("+parameter+")")
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_"+traffic+"_"+parameter, fmt="png",dpi=1000)
-                plt.close()
-
-        # Com ajuda da lib Pandas pode-se encontrar algumas estatísticas importantes.
-        # resp_t_size_df = pd.DataFrame(resp_t_size, columns=['size'])
-        # resp_t_size_df.describe()
-
-        # Definindo que o parametro size pode ser lido apenas uma vez.
-        first_resp_trace_size = 1     
-
-
 
 # Função para definir a distribuição de probabilidade compatível com os 
 # valores do trace utilizada para gerar valores aleatórios por TCDF
-def tcdf(y, parameter, traffic):
+        
+def tcdf(y, parameter, case_study, save_graph, IC):
     global t_net
     # Indexar o vetor y pelo vetor x
     x = np.arange(len(y))
@@ -362,9 +198,9 @@ def tcdf(y, parameter, traffic):
         #
         # Fim cálculo de rejeição
         
-        ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode='exact', alternative='less')
+        ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe)
             
-        rejects, IC, D_critico = ksvalid(len(t_Fe), ks_statistic)
+        rejects, IC, D_critico = ksvalid(len(t_Fe), ks_statistic, IC)
         # rejects, IC, D_critico = ksvalid(size, Dobs)
 
         
@@ -438,18 +274,18 @@ def tcdf(y, parameter, traffic):
     results.sort_values(['ks_value'], inplace=True, ascending=True)
 
     # Apresentar os resultados em uma tabela
-    print ('\nDistributions sorted by KS Test of ',traffic,'(',parameter,'):')
+    print ('\nDistributions sorted by KS Test of ',proto,'(',parameter,'):')
     print ('----------------------------------------')
     print (results)
-    print (traffic," ",parameter," ",y[0:3])
+    print (proto," ",parameter," ",y[0:3])
     # Divida os dados observados em N posições para plotagem (isso pode ser alterado)
     bin_cutoffs = np.linspace(np.percentile(y,0), np.percentile(y,99), nbins)
 
     # Crie o gráfico
-    # if plot_graph == True:
+    # if save_graph == True:
     h = plt.hist(y, bins = bin_cutoffs, color='0.75')
     
-    if plot_graph == False:
+    if save_graph == False:
         plt.clf()
         plt.close()
     # Receba as principais distribuições da fase anterior 
@@ -462,37 +298,7 @@ def tcdf(y, parameter, traffic):
     
     # Faça um loop pelas distribuições para obter o ajuste e os parâmetros da linha
     for dist_name in dist_names:
-        # Chamando variáveis globais
-        global arg_time
-        global loc_time
-        global scale_time
-        global dist_time
-
-        global arg_size
-        global loc_size
-        global scale_size
-        global dist_size
-
-        global req_arg_time
-        global req_loc_time
-        global req_scale_time
-        global req_dist_time
-
-        global req_arg_size
-        global req_loc_size
-        global req_scale_size
-        global req_dist_size
-
-        global resp_arg_time
-        global resp_loc_time
-        global resp_scale_time
-        global resp_dist_time
-
-        global resp_arg_size
-        global resp_loc_size
-        global resp_scale_size
-        global resp_dist_size
-        
+        # Chamando variáveis globais       
         # Obtendo distribuições e seus parametros de acordo com o trace
         dist = getattr(scipy.stats, dist_name)
         param = dist.fit(y)
@@ -503,62 +309,25 @@ def tcdf(y, parameter, traffic):
         scale = param[-1]
         print(parameters)
 
-        if parameter == "Time" and traffic == "send":
-            dist_time = dist_name
-            loc_time = loc
-            scale_time = scale
-            arg_time = arg
-
-        if parameter == "Size" and traffic == "send":
-            dist_size = dist_name
-            loc_size = loc
-            scale_size = scale
-            arg_size = arg
-
-        if parameter == "Time" and traffic == "request":
-            req_dist_time = dist_name
-            req_loc_time = loc
-            req_scale_time = scale
-            req_arg_time = arg
-
-        if parameter == "Size" and traffic == "request":
-            req_dist_size = dist_name
-            req_loc_size = loc
-            req_scale_size = scale
-            req_arg_size = arg
-
-        if parameter == "Time" and traffic == "response":
-            resp_dist_time = dist_name
-            resp_loc_time = loc
-            resp_scale_time = scale
-            resp_arg_time = arg
-
-        if parameter == "Size" and traffic == "response":
-            resp_dist_size = dist_name
-            resp_loc_size = loc
-            resp_scale_size = scale
-            resp_arg_size = arg
-
-
         # Obter linha para cada distribuição (e dimensionar para corresponder aos dados observados)
         pdf_fitted = dist.pdf(x, *param[:-2], loc=param[-2], scale=param[-1])
         scale_pdf = np.trapz (h[0], h[1][:-1]) / np.trapz (pdf_fitted, x)
         pdf_fitted *= scale_pdf
-        if plot_graph == True:
+        if save_graph == True:
             # Adicione a linha ao gráfico
             plt.plot(pdf_fitted, label=dist_name)
 
             # Defina o eixo gráfico x para conter 99% dos dados
             # Isso pode ser removido, mas, às vezes, dados fora de padrão tornam o gráfico menos claro
             plt.xlim(0,np.percentile(y,99))
-            plt.title("Histogram of trace "+traffic+"(" + parameter + ") + theorical distribuition " + dist_name)
+            plt.title("Histogram of trace (" + parameter + ") + theorical distribuition " + dist_name)
     # Adicionar legenda
     plt.legend()
-    if plot_graph == True:
+    if save_graph == True:
         if plot == "show":
             plt.show()
         if plot == "save":
-            plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_hist_tcdf_"+traffic+"_"+dist_name+"_"+parameter, fmt="png",dpi=1000)
+            plt.savefig("/home/carl/New_Results/Files/"+case_study+"_"+histogram+"_"+proto+"_tcdf_"+dist_name+"_"+parameter, fmt="png",dpi=1000)
             plt.close()
     # Armazenar parâmetros de distribuição em um quadro de dados (isso também pode ser salvo)
     dist_parameters = pd.DataFrame()
@@ -642,7 +411,7 @@ def tcdf(y, parameter, traffic):
 
         ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode='exact', alternative='less')
       
-        rejects, IC, D_critico = ksvalid(len(t_Fe), ks_statistic)
+        rejects, IC, D_critico = ksvalid(len(t_Fe), ks_statistic, IC)
         # rejects, IC, D_critico = ksvalid(size, Dobs)
 
         
@@ -667,7 +436,7 @@ def tcdf(y, parameter, traffic):
         print(" ")
 
         # Plotando resultados do teste KS
-        if plot_graph == True:
+        if save_graph == True:
             plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
             plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
             
@@ -675,36 +444,15 @@ def tcdf(y, parameter, traffic):
             # plt.plot(t_Fe, Fe, 'o', label='Real Trace')
             # plt.plot(Ft, Fe, 'o', label='Syntatic Trace')
             # Definindo titulo
-            plt.title("KS Test of Real Trace of "+traffic+" with " + distribution + " Distribution (" + parameter + ")")
+            plt.title("KS Test of Real Trace of "+proto+" with " + distribution + " Distribution (" + parameter + ")")
             plt.legend()
-            if plot == "show":
-                plt.show()
-            if plot == "save":
-                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_kstest_tcdf_"+traffic+"_"+distribution+"_"+parameter, fmt="png",dpi=1000)
+            if save_Plot == True:
+            #     plt.show()
+            # if plot == "save":
+                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_kstest_tcdf_"+proto+"_"+distribution+"_"+parameter, fmt="png",dpi=1000)
                 plt.close()
-        global first_tcdf_time
-        global first_tcdf_size
-
-        if parameter == "Size" and traffic == "send":
-            first_tcdf_size = 1
-        if parameter == "Time" and traffic == "send":
-            first_tcdf_time = 1
-
-        global first_req_tcdf_time
-        global first_req_tcdf_size
-        global first_resp_tcdf_time
-        global first_resp_tcdf_size
-
-        if parameter == "Size" and traffic == "request":
-            first_req_tcdf_size = 1
-        if parameter == "Time" and traffic == "request":
-            first_req_tcdf_time = 1
-
-        if parameter == "Size" and traffic == "response":
-            first_resp_tcdf_size = 1
-        if parameter == "Time" and traffic == "response":
-            first_resp_tcdf_time = 1
-
+     
+        return dist_name, loc, scale, arg
 
 def tcdf_generate(dist, loc, scale, arg, parameter):
     # Setar distribuição escolhida.
@@ -724,14 +472,15 @@ def tcdf_generate(dist, loc, scale, arg, parameter):
 
 # Função de geração de variáveis aleatórias de acordo com distribuições 
 # de probabilidade e parametros definidos
-def wgwnet_PD(parameter, traffic):
+def PD(parameter, const_Size):
     # Mais distribuições podem ser encontradas no site da lib "scipy"
     # Veja https://docs.scipy.org/doc/scipy/reference/stats.html para mais detalhes
     # global request
     # global size_request
     # global time_request
-    if traffic == "request" and parameter == "Size":
-        if const_Size == "False":
+    r_N = []
+    if parameter == "Size":
+        if const_Size == False:
         # Selecionando distribuição de probabilidade para o parametro Size
             dist_name = 'uniform'
             # Definindo parametros da distribuição
@@ -740,15 +489,12 @@ def wgwnet_PD(parameter, traffic):
             arg = []
             # Setando distribuição a escolhida e seus parametros 
             dist = getattr(scipy.stats, dist_name)
-
             # Gerando número aleatório de acordo com a distribuiução e os parametros definidos
-            r_N = dist.rvs(loc=loc, scale=scale, *arg, size=1)
-        else:
-            r_N = 50
+            r_N = dist.rvs(loc=loc, scale=scale, *arg, size=int(size_Trace))
         # size_request = True
-        return(int(r_N))
+       
 
-    if traffic == "request" and parameter == "Time":
+    if parameter == "Time":
        # Selecionando distribuição de probabilidade para o parametro Size
         dist_name = 'uniform'
         # Definindo parametros da distribuição
@@ -758,200 +504,11 @@ def wgwnet_PD(parameter, traffic):
         # Setando distribuição a escolhida e seus parametros 
         dist = getattr(scipy.stats, dist_name)
         # Gerando número aleatório de acordo com a distribuiução e os parametros definidos
-        r_N = dist.rvs(loc=loc, scale=scale, *arg, size=1)
-        # time_request = True
-        return(float(r_N))
+        r_N = dist.rvs(loc=loc, scale=scale, *arg, size=int(size_Trace))
+        
+    return(r_N)
 
-    if traffic == "response" and parameter == "Size":
-        if const_Size == "False":
-        # Selecionando distribuição de probabilidade para o parametro Size
-            dist_name = 'uniform'
-            # Definindo parametros da distribuição
-            loc = 1024
-            scale = 2048
-            arg = []
-            # Setando distribuição a escolhida e seus parametros 
-            dist = getattr(scipy.stats, dist_name)
-
-            # size_request = False
-            # Gerando número aleatório de acordo com a distribuiução e os parametros definidos
-            r_N = dist.rvs(loc=loc, scale=scale, *arg, size=1)
-        else:
-            r_N = 100
-        return(int(r_N))
-            
-    if traffic == "response" and parameter == "Time":
-        # Selecionando distribuição de probabilidade para o parametro Size
-        dist_name = 'uniform'
-        # Definindo parametros da distribuição
-        loc = 0.5
-        scale = 0.8
-        arg = []
-        # Setando distribuição a escolhida e seus parametros 
-        dist = getattr(scipy.stats, dist_name)
-
-        # time_request = False
-        # Gerando número aleatório de acordo com a distribuiução e os parametros definidos
-        r_N = dist.rvs(loc=loc, scale=scale, *arg, size=1)
-        return(float(r_N))
-
-
-    if traffic == "send" and parameter == "Size":
-        if const_Size == "False":
-            # Selecionando distribuição de probabilidade para o parametro Size
-            dist_name = 'uniform'
-            # Definindo parametros da distribuição
-            loc = 1024
-            scale = 2048
-            arg = []
-            # Setando distribuição a escolhida e seus parametros 
-            dist = getattr(scipy.stats, dist_name)
-
-            # size_request = False
-            # Gerando número aleatório de acordo com a distribuiução e os parametros definidos
-            r_N = dist.rvs(loc=loc, scale=scale, *arg, size=1)
-        else:
-            r_N = 1400
-        return(int(r_N))
-
-    if traffic == "send" and parameter == "Time":
-        # Selecionando distribuição de probabilidade para o parametro Size
-        dist_name = 'uniform'
-        # Definindo parametros da distribuição
-        loc = 0.5
-        scale = 0.8
-        arg = []
-        # Setando distribuição a escolhida e seus parametros 
-        dist = getattr(scipy.stats, dist_name)
-
-        # Gerando número aleatório de acordo com a distribuiução e os parametros definidos
-        r_N = dist.rvs(loc=loc, scale=scale, *arg, size=1)
-        return(float(r_N))
-    
-def constSize(traffic, app_protocol):
-    size = 0
-    global mt_const 
-    global t_size
-    global req_t_size
-    global resp_t_size
-    
-    if app_protocol == "ftp":
-        if traffic == "request":
-            if mt_const == "Trace":
-                size = np.mean(req_t_size)
-            if mt_const == "Value":
-                size = 500
-            return int(size)
-        if traffic == "response":
-            if mt_const == "Trace":
-                size = np.mean(resp_t_size)
-            if mt_const == "Value":
-                size = 500
-            return int(size)
-        if traffic == "send":
-            if mt_const == "Trace":
-                size = np.mean(t_size)
-            if mt_const == "Value":
-                size = 500
-            return int(size)
-
-    if app_protocol == "hls":
-        if traffic == "request":
-            if mt_const == "Trace":
-                size = np.mean(req_t_size)
-            if mt_const == "Value":
-                size = 500
-            return int(size)
-        if traffic == "response":
-            if mt_const == "Trace":
-                size = np.mean(resp_t_size)
-            if mt_const == "Value":
-                size = 500
-            return int(size)
-        if traffic == "send":
-            if mt_const == "Trace":
-                size = np.mean(t_size)
-            if mt_const == "Value":
-                size = 500
-            return int(size)
-
-    if app_protocol == "http":
-        if traffic == "request":
-            if mt_const == "Trace":
-                size = np.mean(req_t_size)
-            if mt_const == "Value":
-                size = 117
-            return int(size)
-
-        if traffic == "response":
-            if mt_const == "Trace":
-                size = np.mean(resp_t_size)
-                print("response Size: ", size)
-            if mt_const == "Value":
-                size = 465
-            return int(size)
-
-    if app_protocol == "udp":
-        if mt_const == "Trace":
-            size = np.mean(t_size)
-        if mt_const == "Value":
-            size = 500
-        return int(size)
-
-    if app_protocol == "tcp":
-        if mt_const == "Trace":
-            size = np.mean(t_size)
-        if mt_const == "Value":
-            size = 536
-        return int(size)
-
-def ecdf(y, parameter, traffic):
-    global cont
-    global first_send
-    global first_req
-    global first_resp
-    global y_req 
-    global y_resp
-    global y_send
-
-    # Organizando o vetor com os dados do trace
-    y.sort()
-    
-    if traffic == 'request':
-        if first_req == True:
-            # y = np.around(y, 4)
-            # print("Original REQ: ", y)
-            y_req = list(dict.fromkeys(y))
-            y = y_req
-            first_req = False
-            # print("Modify REQ: ", y_req)
-        else:
-            y = y_req
-            # print("Modify REQ: ",len(y_req))
-
-    if traffic == 'response':
-        if first_resp == True:
-            # y = np.around(y, 4)
-            # print("Original RESP: ", y)
-            y_resp = list(dict.fromkeys(y))
-            y = y_resp
-            # print("Modify RESP: ",y_req)
-            first_resp = False
-        else:
-            y = y_resp
-            # print("Modify RESP: ",len(y_req))
-    
-    if traffic == 'send':
-        if first_send == True:
-            # y = np.around(y, 2)
-            # print("Original SEND: ", y)
-            y_send = list(dict.fromkeys(y))
-            y = y_send
-            # print("Modify SEND: ", y_req)
-            first_send = False
-        else:
-            y = y_send
-            # print("Modify SEND: ",len(y_req))
+def ecdf(y, parameter, proto):
 
     # Criando listas para os dados utilizados
     Fx = []
@@ -966,135 +523,180 @@ def ecdf(y, parameter, traffic):
 
     # print ("Fx: ", len(Fx))
     # print ("Fx_: ", len(Fx_))
-    
-    
-    # Gerando um valor aleatório entre 0 e 1 uniforme
-    rand = np.random.uniform(0,1)
-    # print("Rand: ", rand)
-    
-    # Pecorrer todos os valores do vetor com dados do trace
-    # para determinar o valor a ser gerado de acordo com o resultado da distribuição uniforme
-    r_N = 0
-    for i in range(0, len(y)):
-        # Condição que define em qual classe o valor é encontrado
-        if rand > Fx[i] and rand < Fx_[i]:
-            # Determinando o valor resultante 
-            r_N = y[i-1]
+    r_N = []
+    for id in range(0, len(y)):
+        # Gerando um valor aleatório entre 0 e 1 uniforme
+        rand = np.random.uniform(0,1)
+        # print("Rand: ", rand)
+        
+        # Pecorrer todos os valores do vetor com dados do trace
+        # para determinar o valor a ser gerado de acordo com o resultado da distribuição uniforme
+        # r_N = 0
+        for i in range(0, len(y)):
+            # Condição que define em qual classe o valor é encontrado
+            if rand > Fx[i] and rand < Fx_[i]:
+                # Determinando o valor resultante 
+                r_N.append(y[i-1]) 
             
-    
-    # print ("Fx: ", Fx)
-    # print ("Fx_: ", Fx_)
-    # print(r_N)
-    # print ("Y: ", len(y))
-    
-    if len(y) == 1245:
-        cont+=1
-        print(cont)
-    # Condição para retorno do valor de acordo com o parametro de rede.
-    if parameter == "Size":
-        # print ("ECDF SIZE: ", r_N)
-        return(int(abs(r_N)))
-
-    if parameter == "Time":
-        # print ("ECDF TIME: ", r_N)
-        r_N = np.around(r_N, 2)
-        w = open("../../../Results/Prints/ecdf_"+traffic+"_Time.txt", "a")
-
-        w.write("\n" + str(r_N) + "\n")
-        w.close()
-        # np.savetxt('/home/carl/New_Results/Files/'+'ecdf_'+app_protocol+'_time_req_ns3.txt', time_req_ns3, delimiter=',', fmt='%f')
-        return(abs(r_N))
-
+    # w = open("/home/carl/New_Results/Filter_Traces/RV_ecdf_"+proto+"_"+parameter+".txt", "a")
+    # w.write("\n" + str(r_N) + "\n")
+    # w.close()
+    return r_N
 
 # Função de definição da aplicação HTTP
-def read_filter(const_Size, type_Size):
+def read_filter(const_Size, type_Size, save_graph, case_study):
     # global const_Size
-                                                             
-    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocols"])
+    first = True                                                    
+    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocols"])
+    
     # print(txt_df)
     # txt_df = txt_df[txt_df.Size > 0]
 
     # Agrupar dados do framework por protocol
     # Criar os arquivos de acordo com os protocolos diferentes
-    arr_protocols = list(set( txt_df["protocols"]))
+    arr_protocols = list(set(txt_df["protocols"]))
     
     # print(arr_protocols)
     # Cria valores só pra um valor da coluna 
     for proto in arr_protocols:
+
         # txt_df[] = txt_df.loc[txt_df['protocols'] == str(eth:ethertype:ip:tcp)]
-        time_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
-        # print(time_df)
+        data_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
+        # print(proto)
+        # print(data_df)
     
+        t_Time = np.array(data_df["Time"])
+        # print(t_Time)
+        sub = []
+        if len(t_Time) > 1:
+            for i in range(0,len(t_Time)-1):
+                sub.append(t_Time[i+1] - t_Time[i])
+            
+            # Passando valores resultantes para a variável padrão t_time
+            t_Time = np.array(sub)
+            t_Time = t_Time.astype(float)
+            # print(t_Time)
+            
 
+            t_Time = np.delete(t_Time, np.where(t_Time == 0))
+            t_Time.sort()
 
+            # Plot histograma t_time:
+            plot_histogram(t_Time, save_graph, "Time", case_study, proto)
 
+        np.savetxt('/home/carl/New_Results/Files/'+case_study+'_flow_'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
 
-    # time_req_df = txt_df[txt_df['req_resp'].str.contains("GET")]
-    # time_req_df["Time"] = time_req_df["Time"].apply(pd.to_numeric)
-    # print(time_req_df)
-    # time_resp_df = txt_df[txt_df['req_resp'].str.contains("OK")]
-    # print(time_resp_df)
-    # time_resp_df["Time"] = time_resp_df["Time"].apply(pd.to_numeric)
-    
-        np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_time.txt', time_df["Time"], delimiter=',', fmt='%f')
-    # np.savetxt('/home/carl/New_Results/Files/'+app_protocol+'_req_time.txt', time_req_df["Time"], delimiter=',', fmt='%f')
-        size_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
         if const_Size == False:
-        # Abrindo arquivos .txt
+            # Plot histograma t_time:
+            # print(data_df["Size"])
+            plot_histogram(data_df["Size"], save_graph, "Size", case_study, proto)
+            if len(t_Time) > 1:
+                np.savetxt('/home/carl/New_Results/Files/'+case_study+'_flow_'+proto+'_size.txt', data_df["Size"], delimiter=',', fmt='%f')
             
-            # size_req_df["Size"] = size_req_df["Size"].apply(pd.to_numeric)
-
-            # size_resp_df = txt_df[txt_df['req_resp'].str.contains("HTTP/1.1")]
-            # size_resp_df["Size"] = size_resp_df["Size"].apply(pd.to_numeric)
-            # size_req_df.round(5)
-            # size_df.round(5)
-            np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', size_df["Size"], delimiter=',', fmt='%f')
-            # np.savetxt('/home/carl/New_Results/Files/'+app_protocol+'_resp_size.txt', size_resp_df["Size"], delimiter=',', fmt='%f')
         else:
-            # size_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
-            
+
             if type_Size == "mean_Trace":
-                size = np.mean(size_df["Size"])
+                size = np.mean(data_df["Size"])
             if type_Size == "const_Value":
                 size = 500
             
             
-            arr_Size = np.empty(len(size_df["Size"])-1)
-            arr_Size = [size for x in range(len(size_df["Size"])-1)]
+            arr_Size = np.empty(len(data_df["Size"])-1)
+            arr_Size = [size for x in range(len(data_df["Size"]))]
+            if len(t_Time) > 1:
+                np.savetxt('/home/carl/New_Results/Files/'+case_study+'_flow_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+        
+        
+        
+        if first == True:
+            w = open("/home/carl/New_Results/Files/list_tr_size.txt", "w")
+            w.write('"flow_Trace";"size_Trace"\n')
+            first = False
+    
+        else:
+            w = open("/home/carl/New_Results/Files/list_tr_size.txt", "a")
+        if len(data_df) > 1:
+            w.write('"'+str(proto) + '";"' + str(len(data_df)) + '"\n')
+        w.close()
+        # print(proto)
 
-            np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+
+            # lista = list(proto, size)
+            # param_df = pd.DataFrame({'flows': [proto], 'len': [size]})
+            # param_df = pd.Dataframe(float(len(data_df["Size"])), "")
+            # param_df.to_csv('/home/carl/New_Results/Files/list_tr_size.txt')
+
+        # np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', param_df, delimiter=',', fmt='%f')
         # timeStopSimulation =  time_resp_df["Time"].iloc[-1]
         # print(timeStopSimulation)
         # nRequestPackets = len(time_req_df["Time"])
         # nResponsePackets = len(time_resp_df["Time"])
-    
+    return arr_protocols
 
 
 
 def main(argv):
+    #
+    # Filtro e criação de arquivos
+    #
     # Determina se os tamanhos de pacotes serão constantes caso True ou se seguirão o padrão do trace caso False
     const_Size = True
     # Tipo de tamanho de pacote: "const_Value"(Valor específico) | "mean_Trace"(Usa a média do tamanho dos pacotes do trace)
     type_Size = "const_Value"
+    save_graph = True
+    # parameters = ["Size", "Time"]
+    case_study = "http"
+    # "99.80%";"99.85%";"99.90%";"99.95%";"99.99%"
+    IC="95.0"
+    # Chamada da função de filtro do trace e criação de arquivos com os parametros da rede
+    arr_protocols = read_filter(const_Size, type_Size, save_graph, case_study)
 
-    read_filter(const_Size, type_Size)
+    #
+    # Criação das variáveis aleatórias
+    #
+    # Determinação do método de geração de carga de trabalho
+    # TCDF (Criação de teóricas com método de fitness com trace) 
+    # ECDF (Criação a partir da distribuição empirica do Trace)
+    # PD (Criação por meio de distribuições desejadas e seus parâmetros)
+    mt_RG = "tcdf"
+    # Definindo os parametros de tempo(Time) e tamanho(Size)
+    parameters = ["size", "time"]
 
-    # traffic = "send"
-    # parameter = "Size"
+    for proto in arr_protocols:
+        for parameter in parameters:
+            # txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","Time","Size","protocols"])
+            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+case_study+"_flow_"+proto+"_"+parameter+".txt", usecols=0)
+            print(str("flow_"+proto+"_"+parameter+".txt"))
+            filter_Trace = np.array(filter_Trace)
+            # print(filter_Trace)
+            # filter_Trace.sort()
+            size_Trace = len(filter_Trace)
 
-    #     # Condição de escolha do método de geração de variáveis aleatórias 
-    #     # diretamente por uma distribuição de probabiidade
-    #     if mt_RG == "PD":
-    #         # Chamando a função wgwnet_PD() e retornando valor gerado para uma variável auxiliar
-    #         aux_packet = wgwnet_PD(parameter, traffic)
-    # # Condição de escolha do método de geração de variáveis aleatórias 
-    #     # baseado nos dados do trace
-    #     if first_trace_size == 0 and (mt_RG == "ecdf" or mt_RG == "tcdf"):
+            # Condição de escolha do método de geração de variáveis aleatórias 
+            # diretamente por uma distribuição de probabiidade
+            if mt_RG == "PD":
+                # Chamando a função PD() e retornando valor gerado para uma variável auxiliar
+                aux_Packet = PD(parameter, const_Size)
+             
+            # Condição de escolha do método por distribuições teórica equivalentes aos dados do trace
+            if mt_RG == "tcdf":
+                # Condição de chamada única da função tcdf()
+                # Chamando a função tcdf para definir a distribuição de probabilidade compatível ao trace e 
+                # seus respectivos parametros para geração de números aleatórios
+                dist_name, loc, scale, arg = tcdf(filter_Trace, parameter, case_study, save_graph, IC)
+
+                # Chamando a função tcdf_generate e retornando valor gerado para uma variável auxiliar
+                aux_Packet = tcdf_generate(dist_name, loc, scale, arg, parameter)
+
+            # Condição de escolha do método pela distribuição empírica dos dados do trace
+            if mt_RG == "ecdf":
+                # Chamando a função ecdf e retornando valor gerado para uma variável auxiliar
+                aux_Packet = ecdf(filter_Trace, parameter, proto)
+                    
+                    
+            # Salvando arquivos de variáveis aleatórias
+            np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
             
-    #         if first_trace_size == 0:
-    #             # Definindo o método de leitura do arquivo trace
-    #             if reader == "txt":
-    #                 read_txt(parameter, traffic, app_protocol)
 
 if __name__ == '__main__':
     main(sys.argv)

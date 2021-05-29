@@ -19,4 +19,3 @@ sudo sed -i ':a;N;$!ba;s/\t/";"/g' "${dir_tr_filter}${app_protocol}_trace.txt"
 # Adicionando aspas no começo e no final do arquivo
 sudo sed -i '1s/^/"/' "${dir_tr_filter}${app_protocol}_trace.txt"
 sudo sed -i '${s/$/"/}' "${dir_tr_filter}${app_protocol}_trace.txt"
-
