@@ -8,7 +8,7 @@ dir_tr_filter="/home/carl/New_Results/Filter_Traces/"
 # Por enquanto
 app_protocol="http"
 # Start Filter config
-sudo termshark -r ${dir_pcap_file} -T fields -E separator=/t -e ip.src -e ip.dst -e frame.time_relative -e frame.len -e frame.protocols > ${dir_tr_filter}${app_protocol}_trace.txt
+sudo termshark -r ${dir_pcap_file} -T fields -E separator=/t -e ip.src -e ip.dst -e frame.time_relative -e frame.len -e frame.protocols -e tcp.len -e udp.length > ${dir_tr_filter}${app_protocol}_trace.txt
 
 
 # Habilitando permissões ao arquivo gerado

@@ -437,7 +437,7 @@ def tcdf(y, parameter, case_Study, save_Graph, IC, proto, tcdf_First):
             tcdf_First = False
         else:
             w = open("/home/carl/New_Results/Files/tcdf_results_"+parameter+".txt", "a")
-            w.write('"'+str(proto) + '";"' + str(dist_names) + '";"' + str(ks_values) + '";"' + str(chi_square) + '";"' + str(rejects) + '"\n')
+            w.write(''+str(proto) + ' ' + str(dist_names) + ' ' + str(ks_values) + ' ' + str(chi_square) + ' ' + str(rejects) + '\n')
         w.close()
         # Imprimindo resultados do KS Test
         # print(" ")
@@ -494,7 +494,7 @@ def tcdf_generate(dist, loc, scale, arg, parameter, size):
 
 # Função de geração de variáveis aleatórias de acordo com distribuições 
 # de probabilidade e parametros definidos
-def PD(parameter, const_Size):
+def PD(parameter, const_Size, size_Trace):
     # Mais distribuições podem ser encontradas no site da lib "scipy"
     # Veja https://docs.scipy.org/doc/scipy/reference/stats.html para mais detalhes
     # global request
@@ -584,28 +584,125 @@ def ecdf(y, parameter, proto):
     # w.close()
     return r_N
 
+
 # Função de definição da aplicação HTTP
 def read_filter(const_Size, type_Size, save_Graph, case_Study):
     # global const_Size
     first = True                                                    
-    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols"])
+    txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
     
+    txt_df = txt_df[txt_df.tcp_Size != 0]
+    txt_df = txt_df[txt_df.udp_Size != 0]
     # print(txt_df)
-    # txt_df = txt_df[txt_df.Size > 0]
+    # txt_df["ip_SRC"] = pd.to_numeric(txt_df["ip_SRC"],errors='coerce')
+    txt_df.dropna(subset = ["ip_SRC"], inplace=True)
+    # print(txt_df)
+    
+    txt_df['protocols'] = txt_df.protocols.str.replace('ethertype:ip:', '')
+    txt_df['protocols'] = txt_df.protocols.str.replace('wlan_radio:wlan:', '')
 
+    # txt_df['protocols'] = [x.split('ethertype:ip:')[0] for x in txt_df['protocols']]
+    # txt_df['protocols'] = [x.split('wlan_radio:wlan:')[0] for x in txt_df['protocols']]
+
+    arr_protocols = list(set(txt_df["protocols"]))
+    # print(arr_protocols)
+    # id_Proto = 0
+    # for id_Proto in range(len(arr_protocols)):
+    #     # arr_protocols[id_Proto] = arr_protocols[id_Proto] +'_'+str(id_Proto)
+
+    #     print(arr_protocols[id_Proto])
+
+        # aux_txt_df = txt_df['protocols'].str.contains(str(arr_protocols[id_Proto])).astype(str)+'_'+str(id_Proto)
+        # print(arr_protocols[id_Proto])
+        # txt_df['protocols'] = aux_txt_df
+        # print(aux_txt_df)
+        # del aux_txt_df
+    
+    # arr_protocols = list(set(txt_df["protocols"]))
+    # print(arr_protocols)
     # Agrupar dados do framework por protocol
     # Criar os arquivos de acordo com os protocolos diferentes
-    arr_protocols = list(set(txt_df["protocols"]))
+    # print(txt_df["protocols"])
+
+
+
+
+    # txt_df['ip_SRC'][3] = "172.1.1.5"
+    # arr_IP_src = list(set(txt_df["ip_SRC"]))
+    # arr_IP_dst = list(set(txt_df["ip_DST"]))
+    # arr_IP = arr_IP_dst + arr_IP_src
+    # arr_IP = list(dict.fromkeys(arr_IP))
     
-    # print(arr_protocols)
+    first_IP = True
     # Cria valores só pra um valor da coluna 
     for proto in arr_protocols:
-
+        print(proto)
         # txt_df[] = txt_df.loc[txt_df['protocols'] == str(eth:ethertype:ip:tcp)]
-        data_df = txt_df[txt_df['protocols'].str.contains(str(proto))]
-        # print(proto)
-        # print(data_df)
+        data_df = txt_df[txt_df['protocols'].str.contains(proto)]
+        
+        
+        # remover = "ethertype:ip:"
+        # remover = "wlan_radio:wlan:"
+        
+        # print(txt_df)
+        # arr_IP = txt_df['ip_DST'][txt_df['ip_DST'].duplicated(keep=False)]
+        # proto_IP = []
+        # for ip in arr_IP:
+        # proto_IP.append(data_df.loc[data_df['protocols'] == proto, arr_IP])
+        # proto_IP.append(data_df.loc[data_df['protocols'] == proto, arr_IP])
+        # txt_df = txt_df.drop_duplicates(subset=["ip_SRC", "ip_DST"])
+        # txt_df = txt_df.drop_duplicates(subset="ip_SRC")
+        # print(txt_df)
+        # txt_df = txt_df.drop_duplicates(subset="ip_DST")
+        # print(txt_df)
+        # a = txt_df.set_index(["protocols", "ip_SRC"]).count(level="protocols")
+        # b = txt_df.set_index(["protocols", "ip_DST"]).count(level="protocols")
+        # print(a)
+        # print(b)
+        # id_src_IP = 0
+        # count_ip_SRC = 0
+        # for id_src_IP in arr_IP_src:
+        #     if txt_df["protocols"][:-1] == arr_IP_src[id_arr_IP]:
+        #         count_ip_SRC+=1
+        # id_dst_IP = 0
+        # count_ip_DST = 0
+        # for id_dst_IP in arr_IP_dst:
+        #     df[df['c'].isin(A)]
+        #     if txt_df["protocols"].loc[:-1] == arr_IP_dst[id_dst_IP]:
+        #         count_ip_DST+=1
+        
+        # arr_IP_src = list(set(a['ip_DST']))
+        # arr_IP_dst = list(set(b['ip_SRC']))
+        # arr_IP = arr_IP_dst + arr_IP_src
+        # arr_IP = list(dict.fromkeys(arr_IP))
+        # print(arr_IP)
+        ip_proto_df = txt_df.drop(['time', 'size', 'tcp_Size', 'udp_Size'], axis=1)
     
+        ip_proto_df['ip_DST'][3] = "172.1.1.5"
+        
+        # print(ip_proto_df)
+
+        dst_proto_df = ip_proto_df.drop(['ip_SRC'], axis=1)
+        src_proto_df = ip_proto_df.drop(['ip_DST'], axis=1)
+        # print(dst_proto_df)
+        # print(src_proto_df)
+
+        dst_proto_df = dst_proto_df.drop_duplicates()
+        src_proto_df = src_proto_df.drop_duplicates()
+        
+        count_ip_SRC = (src_proto_df.protocols == proto).sum()
+        count_ip_DST = (dst_proto_df.protocols == proto).sum()
+
+        if first_IP == True:
+            w = open("/home/carl/New_Results/Files/proto_ips.txt", "w")
+            # w.write('"Proto";"SRC";"DST"\n')
+            w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
+            first_IP = False
+        else:
+            w = open("/home/carl/New_Results/Files/proto_ips.txt", "a")
+            w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
+        w.close()
+   
         t_Time = np.array(data_df["time"])
         t_Time.sort()
         # print(t_Time)
@@ -658,9 +755,12 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
         else:
             w = open("/home/carl/New_Results/Files/list_tr_size.txt", "a")
         if len(data_df) > 1:
-            w.write('"'+str(proto) + '";"' + str(len(data_df)) + '"\n')
+            w.write(''+str(proto) + ' ' + str(len(data_df)) + '\n')
         w.close()
         # print(proto)
+        
+        
+        txt_df = txt_df[txt_df.protocols != proto]
 
 
             # lista = list(proto, size)
@@ -674,8 +774,6 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
         # nRequestPackets = len(time_req_df["time"])
         # nResponsePackets = len(time_resp_df["time"])
     return arr_protocols
-
-
 
 def kstest():
     y = [142.773, 146.217, 147.676, 147.740, 149.016, 149.105, 150.476, 151.284, 151.461, 151.763, 151.932, 154.519, 154.632, 154.789, 155.008, 155.325, 155.402, 155.506, 155.545, 155.561, 155.581, 155.584, 155.701, 156.115, 156.340, 156.851, 156.879, 157.044, 157.404, 157.435, 157.573, 157.599, 157.688, 157.717, 157.858, 158.033, 158.154, 158.387, 158.475, 159.068, 159.215, 159.234, 159.366, 159.499, 159.576, 159.601, 159.767, 159.824, 159.978, 160.036, 160.289, 160.289, 160.327, 160.430, 160.496, 160.519, 160.719, 160.745, 160.942, 161.341, 161.438, 161.683, 161.767, 161.865, 162.064, 162.289, 162.302, 162.711, 162.752, 162.855, 162.866, 162.884, 162.918, 162.947, 163.136, 164.080, 164.138, 164.479, 164.524, 164.566, 164.850, 164.965, 165.000, 165.292, 165.397, 165.408, 165.538, 165.997, 166.311, 166.327, 166.367, 166.671, 167.214, 167.690, 168.178, 170.181, 170.633, 171.434, 173.424, 179.891]
@@ -828,7 +926,7 @@ def main(argv):
     # TCDF (Criação de teóricas com método de fitness com trace) 
     # ECDF (Criação a partir da distribuição empirica do Trace)
     # PD (Criação por meio de distribuições desejadas e seus parâmetros)
-    mt_RG = "tcdf"
+    mt_RG = "PD"
     # Definindo os parametros de tempo(Time) e tamanho(Size)
     parameters = ["size", "time"]
     tcdf_First = True
@@ -841,13 +939,13 @@ def main(argv):
             filter_Trace = np.array(filter_Trace)
             # print(filter_Trace)
             # filter_Trace.sort()
-            # size_Trace = len(filter_Trace)
+            size_Trace = len(filter_Trace)
 
             # Condição de escolha do método de geração de variáveis aleatórias 
             # diretamente por uma distribuição de probabiidade
             if mt_RG == "PD":
                 # Chamando a função PD() e retornando valor gerado para uma variável auxiliar
-                aux_Packet = PD(parameter, const_Size)
+                aux_Packet = PD(parameter, const_Size, size_Trace)
                 # Salvando arquivos de variáveis aleatórias
                 np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
             
