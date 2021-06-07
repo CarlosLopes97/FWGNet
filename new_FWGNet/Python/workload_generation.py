@@ -587,127 +587,67 @@ def ecdf(y, parameter, proto):
 
 # Função de definição da aplicação HTTP
 def read_filter(const_Size, type_Size, save_Graph, case_Study):
-    # global const_Size
+    
     first = True                                                    
     txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
     
     txt_df = txt_df[txt_df.tcp_Size != 0]
     txt_df = txt_df[txt_df.udp_Size != 0]
-    # print(txt_df)
-    # txt_df["ip_SRC"] = pd.to_numeric(txt_df["ip_SRC"],errors='coerce')
-    txt_df.dropna(subset = ["ip_SRC"], inplace=True)
+
+    txt_df = txt_df.fillna(0)
+
     # print(txt_df)
     
     txt_df['protocols'] = txt_df.protocols.str.replace('ethertype:ip:', '')
+    txt_df['protocols'] = txt_df.protocols.str.replace('ethertype:ipv6:', '')
     txt_df['protocols'] = txt_df.protocols.str.replace('wlan_radio:wlan:', '')
-
-    # txt_df['protocols'] = [x.split('ethertype:ip:')[0] for x in txt_df['protocols']]
-    # txt_df['protocols'] = [x.split('wlan_radio:wlan:')[0] for x in txt_df['protocols']]
-
+    
+    
     arr_protocols = list(set(txt_df["protocols"]))
-    # print(arr_protocols)
-    # id_Proto = 0
-    # for id_Proto in range(len(arr_protocols)):
-    #     # arr_protocols[id_Proto] = arr_protocols[id_Proto] +'_'+str(id_Proto)
-
-    #     print(arr_protocols[id_Proto])
-
-        # aux_txt_df = txt_df['protocols'].str.contains(str(arr_protocols[id_Proto])).astype(str)+'_'+str(id_Proto)
-        # print(arr_protocols[id_Proto])
-        # txt_df['protocols'] = aux_txt_df
-        # print(aux_txt_df)
-        # del aux_txt_df
+    arr_protocols = np.array(arr_protocols)
     
-    # arr_protocols = list(set(txt_df["protocols"]))
-    # print(arr_protocols)
-    # Agrupar dados do framework por protocol
-    # Criar os arquivos de acordo com os protocolos diferentes
-    # print(txt_df["protocols"])
+    print(arr_protocols)
 
-
-
-
-    # txt_df['ip_SRC'][3] = "172.1.1.5"
-    # arr_IP_src = list(set(txt_df["ip_SRC"]))
-    # arr_IP_dst = list(set(txt_df["ip_DST"]))
-    # arr_IP = arr_IP_dst + arr_IP_src
-    # arr_IP = list(dict.fromkeys(arr_IP))
-    
-    first_IP = True
+    first_Ip = True
+    first_Time = True
+    first_Size = True
     # Cria valores só pra um valor da coluna 
     for proto in arr_protocols:
-        print(proto)
+        
         # txt_df[] = txt_df.loc[txt_df['protocols'] == str(eth:ethertype:ip:tcp)]
         data_df = txt_df[txt_df['protocols'].str.contains(proto)]
-        
-        
-        # remover = "ethertype:ip:"
-        # remover = "wlan_radio:wlan:"
-        
-        # print(txt_df)
-        # arr_IP = txt_df['ip_DST'][txt_df['ip_DST'].duplicated(keep=False)]
-        # proto_IP = []
-        # for ip in arr_IP:
-        # proto_IP.append(data_df.loc[data_df['protocols'] == proto, arr_IP])
-        # proto_IP.append(data_df.loc[data_df['protocols'] == proto, arr_IP])
-        # txt_df = txt_df.drop_duplicates(subset=["ip_SRC", "ip_DST"])
-        # txt_df = txt_df.drop_duplicates(subset="ip_SRC")
-        # print(txt_df)
-        # txt_df = txt_df.drop_duplicates(subset="ip_DST")
-        # print(txt_df)
-        # a = txt_df.set_index(["protocols", "ip_SRC"]).count(level="protocols")
-        # b = txt_df.set_index(["protocols", "ip_DST"]).count(level="protocols")
-        # print(a)
-        # print(b)
-        # id_src_IP = 0
-        # count_ip_SRC = 0
-        # for id_src_IP in arr_IP_src:
-        #     if txt_df["protocols"][:-1] == arr_IP_src[id_arr_IP]:
-        #         count_ip_SRC+=1
-        # id_dst_IP = 0
-        # count_ip_DST = 0
-        # for id_dst_IP in arr_IP_dst:
-        #     df[df['c'].isin(A)]
-        #     if txt_df["protocols"].loc[:-1] == arr_IP_dst[id_dst_IP]:
-        #         count_ip_DST+=1
-        
-        # arr_IP_src = list(set(a['ip_DST']))
-        # arr_IP_dst = list(set(b['ip_SRC']))
-        # arr_IP = arr_IP_dst + arr_IP_src
-        # arr_IP = list(dict.fromkeys(arr_IP))
-        # print(arr_IP)
-        ip_proto_df = txt_df.drop(['time', 'size', 'tcp_Size', 'udp_Size'], axis=1)
-    
-        ip_proto_df['ip_DST'][3] = "172.1.1.5"
-        
-        # print(ip_proto_df)
+        if len(data_df.index) > 2:
+            
+            ip_proto_df = txt_df.drop(['time', 'size', 'tcp_Size', 'udp_Size'], axis=1)
 
-        dst_proto_df = ip_proto_df.drop(['ip_SRC'], axis=1)
-        src_proto_df = ip_proto_df.drop(['ip_DST'], axis=1)
-        # print(dst_proto_df)
-        # print(src_proto_df)
+            dst_proto_df = ip_proto_df.drop(['ip_SRC'], axis=1)
+            src_proto_df = ip_proto_df.drop(['ip_DST'], axis=1)
 
-        dst_proto_df = dst_proto_df.drop_duplicates()
-        src_proto_df = src_proto_df.drop_duplicates()
-        
-        count_ip_SRC = (src_proto_df.protocols == proto).sum()
-        count_ip_DST = (dst_proto_df.protocols == proto).sum()
+            dst_proto_df = dst_proto_df.drop_duplicates()
+            src_proto_df = src_proto_df.drop_duplicates()
+            
+            count_ip_SRC = (src_proto_df.protocols == proto).sum()
+            count_ip_DST = (dst_proto_df.protocols == proto).sum()
+            
+            # print("DST", count_ip_DST)
+            # print("SRC", count_ip_SRC)
+            # print(data_df)
+            # data_df['time'] 
 
-        if first_IP == True:
-            w = open("/home/carl/New_Results/Files/proto_ips.txt", "w")
-            # w.write('"Proto";"SRC";"DST"\n')
-            w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
-            first_IP = False
-        else:
-            w = open("/home/carl/New_Results/Files/proto_ips.txt", "a")
-            w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
-        w.close()
-   
-        t_Time = np.array(data_df["time"])
-        t_Time.sort()
-        # print(t_Time)
-        sub = []
-        if len(t_Time) > 1:
+            if first_Ip == True:
+                w = open("/home/carl/New_Results/Files/proto_ips.txt", "w") 
+                w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
+                first_Ip = False
+            else:
+                w = open("/home/carl/New_Results/Files/proto_ips.txt", "a")
+                w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
+            w.close()
+
+            t_Time = np.array(data_df["time"])
+            t_Time.sort()
+            # print(t_Time)
+            sub = []
+          
             for i in range(0,len(t_Time)-1):
                 sub.append(t_Time[i+1] - t_Time[i])
             
@@ -723,185 +663,58 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             # Plot histograma t_time:
             plot_histogram(t_Time, save_Graph, "time", case_Study, proto)
 
-        np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_flow_'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
-
-        if const_Size == False:
-            # Plot histograma t_time:
-            # print(data_df["size"])
-            plot_histogram(data_df["size"], save_Graph, "size", case_Study, proto)
-            if len(t_Time) > 1:
-                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_flow_'+proto+'_size.txt', data_df["size"], delimiter=',', fmt='%f')
+            np.savetxt('/home/carl/New_Results/Files/'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
             
+            if first_Time == True:
+                w_time = open("/home/carl/New_Results/Files/list_tr_time.txt", "w")
+                w_time.write(''+str(proto) + ' ' + str(len(t_Time)) + '\n')
+                first_Time = False
+        
+            else:
+                w_time = open("/home/carl/New_Results/Files/list_tr_time.txt", "a")
+                w_time.write(''+str(proto) + ' ' + str(len(t_Time)) + '\n')
+            w_time.close()
+
+
+            if const_Size == False:
+                # Plot histograma t_time:
+                plot_histogram(data_df["size"], save_Graph, "size", case_Study, proto)
+                np.savetxt('/home/carl/New_Results/Files/'+proto+'_size.txt', data_df["size"], delimiter=',', fmt='%f')
+            else:
+                if type_Size == "mean_Trace":
+                    size = np.mean(data_df["size"])
+                if type_Size == "const_Value":
+                    size = 500
+                
+                arr_Size = np.empty(len(data_df["size"])-1)
+                arr_Size = [size for x in range(len(data_df["size"]))]
+                
+                np.savetxt('/home/carl/New_Results/Files/'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+            
+            
+            
+            if first_Size == True:
+                w_size = open("/home/carl/New_Results/Files/list_tr_size.txt", "w")
+                w_size.write(''+str(proto) + ' ' + str(len(data_df["size"].index)) + '\n')
+                first_Size = False
+        
+            else:
+                w_size = open("/home/carl/New_Results/Files/list_tr_size.txt", "a")
+                w_size.write(''+str(proto) + ' ' + str(len(data_df["size"].index)) + '\n')
+            w_size.close()
+
+            txt_df = txt_df[txt_df.protocols != proto]
         else:
+            print(proto)
+            # arr_protocols = np.array([1,2,3,4,5])
+            # index = np.argwhere(arr_protocols == proto)
+            # print(index)
+            # np.delete(arr_protocols, index)
+            arr_protocols = np.delete(arr_protocols, np.where(arr_protocols == proto))
+            print(arr_protocols)
 
-            if type_Size == "mean_Trace":
-                size = np.mean(data_df["size"])
-            if type_Size == "const_Value":
-                size = 500
-            
-            
-            arr_Size = np.empty(len(data_df["size"])-1)
-            arr_Size = [size for x in range(len(data_df["size"]))]
-            if len(t_Time) > 1:
-                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_flow_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
-        
-        
-        
-        if first == True:
-            w = open("/home/carl/New_Results/Files/list_tr_size.txt", "w")
-            w.write('"flow_Trace";"size_Trace"\n')
-            first = False
-    
-        else:
-            w = open("/home/carl/New_Results/Files/list_tr_size.txt", "a")
-        if len(data_df) > 1:
-            w.write(''+str(proto) + ' ' + str(len(data_df)) + '\n')
-        w.close()
-        # print(proto)
-        
-        
-        txt_df = txt_df[txt_df.protocols != proto]
-
-
-            # lista = list(proto, size)
-            # param_df = pd.DataFrame({'flows': [proto], 'len': [size]})
-            # param_df = pd.Dataframe(float(len(data_df["size"])), "")
-            # param_df.to_csv('/home/carl/New_Results/Files/list_tr_size.txt')
-
-        # np.savetxt('/home/carl/New_Results/Files/flow_'+proto+'_size.txt', param_df, delimiter=',', fmt='%f')
-        # timeStopSimulation =  time_resp_df["time"].iloc[-1]
-        # print(timeStopSimulation)
-        # nRequestPackets = len(time_req_df["time"])
-        # nResponsePackets = len(time_resp_df["time"])
     return arr_protocols
-
-def kstest():
-    y = [142.773, 146.217, 147.676, 147.740, 149.016, 149.105, 150.476, 151.284, 151.461, 151.763, 151.932, 154.519, 154.632, 154.789, 155.008, 155.325, 155.402, 155.506, 155.545, 155.561, 155.581, 155.584, 155.701, 156.115, 156.340, 156.851, 156.879, 157.044, 157.404, 157.435, 157.573, 157.599, 157.688, 157.717, 157.858, 158.033, 158.154, 158.387, 158.475, 159.068, 159.215, 159.234, 159.366, 159.499, 159.576, 159.601, 159.767, 159.824, 159.978, 160.036, 160.289, 160.289, 160.327, 160.430, 160.496, 160.519, 160.719, 160.745, 160.942, 161.341, 161.438, 161.683, 161.767, 161.865, 162.064, 162.289, 162.302, 162.711, 162.752, 162.855, 162.866, 162.884, 162.918, 162.947, 163.136, 164.080, 164.138, 164.479, 164.524, 164.566, 164.850, 164.965, 165.000, 165.292, 165.397, 165.408, 165.538, 165.997, 166.311, 166.327, 166.367, 166.671, 167.214, 167.690, 168.178, 170.181, 170.633, 171.434, 173.424, 179.891]
-    y.sort()
-    # Set up distribution
-    size = len(y)
-    distribution = 'norm'
-    dist = getattr(scipy.stats, distribution)
-    param = dist.fit(y)
-    print(param)
-  
-
-    #
-    # KS TEST
-    #
-    # Criando percentil
-    percentile = np.linspace(0,100,len(y))
-    percentile_cut = np.percentile(y, percentile)
-    
-    # Criando CDF da teórica
-    Ft = dist.cdf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
-    
-    
-    # Criando CDF Inversa 
-    Ft_ = dist.ppf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
-    
-    # Adicionando dados do trace
-    t_Fe = y
-
-    # Ordenando dados
-    t_Fe.sort()
-    Ft.sort()
-    Ft_.sort()
-
-    # Criando listas para armazenar as ECDFs
-    Fe = []
-    Fe_ = []
-    
-    # ecdf = np.array([12.0, 15.2, 19.3])  
-    arr_ecdf = np.empty(size)
-    arr_ecdf = [x+1 for x in range(size)]
-    arr_div = np.array(size) 
-    
-    # Criando ECDFs
-    # for i in range(0, size):
-        # ecdf i-1/n
-    Fe = (np.true_divide(arr_ecdf, size))
-  
-    arr_ecdf = np.subtract(arr_ecdf, 1)
-
-    Fe_ = (np.true_divide(arr_ecdf, size))
-    
-    # Transformando listas em np.arrays()
-    Fe = np.array(Fe)
-    Fe_ = np.array(Fe_)
-    Ft = np.array(Ft)
-    Ft_ = np.array(Ft_)
-    
-    # Inicio cálculo de rejeição
-    #
-    # Ft(t)-FE-(i),FE+(i)-Ft(t)
-    Ft_Fe_ = abs(np.subtract(Fe_, Ft))
-    Fe_Ft = (np.subtract(Fe, Ft))
-    
-    # Max(Ft(t)-FE-(i),FE+(i)-Ft(t))
-    Dobs_max = np.maximum(Ft_Fe_, Fe_Ft)
-    
-    # Dobs= Max(Max (Ft(t)-FE-(i),FE+(i)-Ft(t)))
-    Dobs = np.max(Dobs_max)
-    #
-    # Fim cálculo de rejeição
-
-    # Definir intervalo de confiança
-    # IC = 99.90 -> alpha = 0.10
-    # IC = 99.95 -> alpha = 0.05
-    # IC = 99.975 -> alpha = 0.025
-    # IC = 99.99 -> alpha = 0.01
-    # IC = 99.995 -> alpha = 0.005
-    # IC = 99.999 -> alpha = 0.001
-    IC = 99.95        
-    # Condição para definir o D_critico de acordo com o tamanho dos dados
-    if size > 35:
-        if IC == 99.90:
-            D_critico = 1.22/np.sqrt(len(y))
-        
-        if IC == 99.95:
-            D_critico = 1.36/np.sqrt(len(y))
-        
-        if IC == 99.975:
-            D_critico = 1.48/np.sqrt(len(y))
-        
-        if IC == 99.99:
-            D_critico = 1.63/np.sqrt(len(y))
-        
-        if IC == 99.995:
-            D_critico = 1.73/np.sqrt(len(y))
-        if IC == 99.999:
-            D_critico = 1.95/np.sqrt(len(y))
-
-        # Condição para aceitar a hipótese nula do teste KS
-        if Dobs > D_critico:
-            rejects = "Reject the Null Hypothesis"
-        else:
-            rejects = "Fails to Reject the Null Hypothesis"
-
-    # Imprimindo resultados do KS Test
-    print("KS TEST:")
-    print("Confidence degree: ", IC,"%")
-    print(rejects, " of ", distribution)
-    print("D observed: ", Dobs)
-    print("D critical: ", D_critico)
-    print(" ")
-
-    # print("T_FE: ", t_Fe)
-    # print("FT: ", Ft)
-    # print("FE: ", Fe)
-    # Plotando resultados do teste KS
-    plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
-    plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
-    
-    
-    # plt.plot(t_Fe, Fe, 'o', label='Real Trace')
-    # plt.plot(Ft, Fe, 'o', label='Syntatic Trace')
-    # Definindo titulo
-    plt.title("KS Test of Real Trace with " + distribution + " Distribution")
-    plt.legend()
-    plt.show() 
-    
+   
 def main(argv):
     # kstest()
     #
@@ -935,7 +748,7 @@ def main(argv):
         for parameter in parameters:
             aux_Packet = 0
             # txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/http_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols"])
-            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_flow_"+proto+"_"+parameter+".txt", usecols=0)
+            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+proto+"_"+parameter+".txt", usecols=0)
             filter_Trace = np.array(filter_Trace)
             # print(filter_Trace)
             # filter_Trace.sort()
