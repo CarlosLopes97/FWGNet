@@ -2,7 +2,7 @@
 /*
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation;
+ * published by the Free Software m_foundation;
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * m_foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Autor: Hygor Jardim da Silva, Castanhal - Pará, Brasil.
  * Contato: hygorjardim@gmail.com - https://hygorjardim.github.io/
@@ -76,6 +76,7 @@ std::string** create_mat(int rows, int columns)
 	}
 	return table;
 }
+
 std::string* create_arr(int rows)
 {
 	std::string* table = new std::string[rows];
@@ -87,6 +88,7 @@ std::string* create_arr(int rows)
 		// { 
 		// table[i] = std::string("0"); 
 		table[i] = "0"; 
+		// std::cout<<table[i]<<std::endl;
 		// }// sample set value;    
 	}
 	return table;
@@ -181,6 +183,19 @@ class Simulation
 		// Additional Function
 		void ReadFiles ();
 
+		void CreateTrace ();
+
+		// Private
+		void CreateNodes ();
+
+		void Mobility ();
+
+		void InstallInternetStack();
+
+		// void ReceivePacket ();
+
+		// void GenerateTraffic ();
+
 	private:
 
 		uint32_t 	m_nodes;
@@ -198,37 +213,59 @@ class Simulation
 		std::string m_simulationName;
 		uint32_t  m_mobilitymodel; // 1 = Grid, 2 = Ns2Mobility/SUMO
 		std::string m_traceFile;
+		
 		// Additional Variables
-		int 	m_n_file;
-		int 	m_n_param;
-		std::string** m_proto_ip;
-		NodeContainer m_n_container;
-		NetDeviceContainer m_device;
-		std::size_t found;
-		NetDeviceContainer* arr_device;
-		NodeContainer* arr_container;
+		double m_rss;
+		uint32_t m_packetSize;
+		uint32_t m_numPackets;
+		double m_interval;
+		Time m_interPacketInterval;
+		bool m_verbose;
+		
+		int m_n_nodes;
 
-		NodeContainer nodes;
-		NetDeviceContainer nodesDevices;
-		Ipv4InterfaceContainer* arr_interfaces;
+		int m_n_file;
+		int m_n_param;
+
+		std::string* arr_m_device;
+		std::string* arr_m_container;
+		std::string* arr_m_stack;
+		std::string* arr_m_adderess;
+		
+		
+		std::string** m_proto_ip;
+		std::size_t m_found;
+		
+		PointToPointHelper p2p;
+		WifiHelper wifi;
+		CsmaHelper csma;
+		YansWifiPhyHelper wifiPhy;
+		YansWifiChannelHelper wifiChannel;
+
+		NodeContainer m_container;
+		NetDeviceContainer m_device;
+		InternetStackHelper m_internetStack;
+		
 		MobilityHelper mobility;
+
+		Ipv4AddressHelper m_ipv4;
+		Ipv4InterfaceContainer m_adderess;
+
+		ApplicationContainer serverApps;
+		
 		Gnuplot gnuplot, gnuplot2, gnuplot3;
 		Gnuplot2dDataset dataset, dataset2, dataset3;
+		
 		FlowMonitorHelper fmhelper;
 		Ptr<FlowMonitor> allMon;
-		ApplicationContainer serverApps;
+		
+	// private:
 
-	private:
-
-		void CreateNodes ();
-
-		void Mobility ();
-
-		void InstallInternetStack();
+	
 
 	};
 
-	Simulation::Simulation (std::string name) :
+	Simulation::Simulation (std::string name):
 		m_nodes (25),
 		m_sinkNode (12),
 		m_xSize (20),
@@ -244,16 +281,31 @@ class Simulation
 		m_simulationName (name),
 		m_mobilitymodel (1),
 		m_traceFile("mobility/mobility.tcl​"),
+		
 		// Additional variables
-		// m_proto ("eth"),
+		m_rss(-60),
+		m_numPackets (100),
+		m_interval (2.0), // seconds
+		m_interPacketInterval (Seconds (m_interval)),
+		m_verbose (false),
+		
+		m_n_nodes (2), 
+		
 		m_n_file (2),
 		m_n_param (3),
+
+		arr_m_device (create_arr(m_n_file)),
+		arr_m_container (create_arr(m_n_file)),
+		arr_m_stack (create_arr(m_n_file)),
+		arr_m_adderess (create_arr(m_n_file)),
+
 		m_proto_ip (create_mat(m_n_file, m_n_param)),
-		m_n_container ("eth"),
-		m_device ("node"),
-		found (0)
-		// arr_device (create_arr(m_n_file)),
-		// arr_container (create_arr(m_n_file))
+		m_found (0),
+
+		m_container ("eth"),
+		m_device ("node")
+
+	
 	{
 	}
 	void Simulation::SetSimulationTime (double st)
@@ -276,76 +328,82 @@ class Simulation
 	void
 	Simulation::Configure (int argc, char *argv[])
 	{
+		
+
 		CommandLine cmd;
+
+		cmd.AddValue ("phyMode", "Wifi Phy mode", m_phyMode);
+		cmd.AddValue ("rss", "received signal strength", m_rss);
+		cmd.AddValue ("packetSize", "size of application packet sent", m_packetSize);
+		cmd.AddValue ("numPackets", "number of packets generated", m_numPackets);
+		cmd.AddValue ("interval", "interval (seconds) between packets", m_interval);
+		cmd.AddValue ("verbose", "turn on all WifiNetDevice log components", m_verbose);
+
 		cmd.Parse (argc, argv);
+		m_interPacketInterval = Seconds (m_interval);
 		LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
+		// LogComponentEnable ("TcpEchoClientApplication", LOG_LEVEL_INFO);
 	}
 	void
 	Simulation::CreateNodes ()
 	{	
 		std::string lat = "2ms";
   		std::string rate = "500kb/s"; // P2P link
+
 		for (int i = 0; i<m_n_file; ++i)
 		{
-			for (int j = 1; j<m_n_param; ++j)
+			m_n_nodes = stoi(m_proto_ip[i][1]) + stoi(m_proto_ip[i][2]);
+			// std::cout<<"m_n_nodes: "<<m_n_nodes<<std::endl;
+			// std::cout<<"m_n_nodes2: "<<<<std::endl;
+			arr_m_container[i] = std::string("nodes_"+m_proto_ip[i][0]);
+			m_container = arr_m_container[i];
+			// NodeContainer m_container;
+			m_container.Create (m_n_nodes);
+			
+
+			// NetDeviceContainer m_device;
+			arr_m_device[i] = std::string("devs_" + m_proto_ip[i][0]);
+			m_device = arr_m_device[i];
+			
+			m_found = m_proto_ip[i][0].find("eth");
+			
+			// int m_n_nodes = stoi(m_proto_ip[i][j]);
+			// m_container = std::string(m_proto_ip[i][0]);
+			// NetDeviceContainer m_device;
+			if (m_found!=std::string::npos && m_n_nodes < 3)
 			{
-				found = m_proto_ip[i][0].find("eth");
+				// m_container.Create (m_n_nodes);
+				p2p.SetDeviceAttribute ("DataRate", StringValue (rate));
+				p2p.SetChannelAttribute ("Delay", StringValue (lat));
+				m_device = p2p.Install (m_container);
+			}
+			if (m_found!=std::string::npos && m_n_nodes > 2)
+			{	
+				// NodeContainer m_container;
+				csma.SetChannelAttribute ("DataRate", DataRateValue (DataRate (rate)));
+				csma.SetChannelAttribute ("Delay", StringValue (lat));
+
+				m_device = csma.Install (m_container);
 				
-				int n_nodes = stoi(m_proto_ip[i][j]);
-				m_n_container = std::string(m_proto_ip[i][0]);
-				// NetDeviceContainer m_device;
-				if (found!=std::string::npos && stoi(m_proto_ip[i][j]) < 3)
-				{
-					int n_nodes = stoi(m_proto_ip[i][j]);
-					m_n_container = std::string("node_"+m_proto_ip[i][0]);
-					NodeContainer m_n_container;
-					m_n_container.Create (n_nodes);
-					PointToPointHelper p2p;
-					p2p.SetDeviceAttribute ("DataRate", StringValue (rate));
-					p2p.SetChannelAttribute ("Delay", StringValue (lat));
-					m_device = std::string("dev_" + m_proto_ip[i][0]);
-					m_device = p2p.Install (m_n_container);
-				}
-				if (found!=std::string::npos && stoi(m_proto_ip[i][j]) < 3)
-				{	
-					
-					NodeContainer m_n_container;
-					m_n_container.Create (n_nodes);
-					CsmaHelper csma;
-					csma.SetDeviceAttribute ("DataRate", StringValue (rate));
-					csma.SetChannelAttribute ("Delay", StringValue (lat));
-					m_device = std::string("dev_" + m_proto_ip[i][0]);
-					m_device = csma.Install (m_n_container);
-					// NetDeviceContainer d1d4 = csma.Install (n1n4);
-				}
-				found = m_proto_ip[i][0].find("radio");
-				if (found!=std::string::npos)
-				{	
-					
-					NodeContainer m_n_container;
-					m_n_container.Create (n_nodes);
-					WifiHelper wifi;
-					wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
-					YansWifiPhyHelper wifiPhy;
-					YansWifiChannelHelper wifiChannel;
-					wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
-					wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel");
-					wifiPhy.SetChannel (wifiChannel.Create ());
+			}
+			m_found = m_proto_ip[i][0].find("radio");
+			if (m_found!=std::string::npos)
+			{	
+				wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+				wifiChannel.SetPropagationDelay ("ns3::ConstantSpeedPropagationDelayModel");
+				wifiChannel.AddPropagationLoss ("ns3::FriisPropagationLossModel");
+				wifiPhy.SetChannel (wifiChannel.Create ());
 
-					WifiMacHelper wifiMac;
-					wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-												"DataMode",StringValue (m_phyMode),
-												"ControlMode",StringValue (m_phyMode));
+				WifiMacHelper wifiMac;
+				wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
+											"DataMode",StringValue (m_phyMode),
+											"ControlMode",StringValue (m_phyMode));
 
-					wifiMac.SetType ("ns3::AdhocWifiMac");
-					m_device = std::string("dev_" + m_proto_ip[i][0]);
-					m_device = wifi.Install (wifiPhy, wifiMac, m_n_container);
-					
-				}
-
-				arr_device[i] = m_device;
-				arr_container[i] = m_n_container;
+				wifiMac.SetType ("ns3::AdhocWifiMac");
+				m_device = wifi.Install (wifiPhy, wifiMac, m_container);
 			}	
+			// std::cout<<"m_device: "<<arr_m_device[i]<<std::endl;
+			// std::cout<<"m_container: "<<arr_m_container[i]<<std::endl;
 		}
 	}
 	void
@@ -362,14 +420,29 @@ class Simulation
 																			"GridWidth", UintegerValue (m_step), // Quantidade de colunas em uma linha
 																			"LayoutType", StringValue ("RowFirst")); // Definindo posições em linha
 				mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
-				mobility.Install (arr_container[i]);
+				
+
+				m_container = arr_m_container[i];
+				// NodeContainer m_container;
+				// m_container.Create(m_n_nodes);
+
+				
+				mobility.Install (m_container);
+				
 			}
+
+			// arr_m_device[i]
+			// arr_m_container[i]
+
+
 			// if (m_mobilitymodel == 2) {
 			// 	Ns2MobilityHelper mobilityns2 = Ns2MobilityHelper (m_traceFile);
 			// 	mobilityns2.Install ();
 			// }
 		}
 	}
+	
+
 	void
 	Simulation::InstallInternetStack ()
 	{
@@ -381,7 +454,8 @@ class Simulation
 	// 	DsrHelper dsr;
 	// 	DsrMainHelper dsrMain;
 		// Ipv4ListRoutingHelper list;
-		InternetStackHelper internetStack;
+
+		// InternetStackHelper m_internetStack;
 	
 	// 	switch (m_protocol)
 	//     {
@@ -405,53 +479,157 @@ class Simulation
 
 	// 	if (m_protocol < 5)
 	// 	{
-	// 	  internetStack.SetRoutingHelper (list);
-	// 	  internetStack.Install (nodes);
+	// 	  m_internetStack.SetRoutingHelper (list);
+	// 	  m_internetStack.Install (nodes);
 	// 	}
 	// 	else if (m_protocol == 5)
 	// 	{
-	// 		internetStack.Install (nodes);
+	// 		m_internetStack.Install (nodes);
     //   dsrMain.Install (dsr, nodes);
 	// 	}
-		// internetStack.SetRoutingHelper (list);
+		// m_internetStack.SetRoutingHelper (list);
+		// InternetStackHelper m_internetStack;
+		// m_internetStack.Install ();
 		for (int i = 0; i<m_n_file; ++i)
 		{
-		
-			internetStack.Install (arr_container[i]);
+			// arr_m_stack[i] = std::string("stack_"+m_proto_ip[i][0]);
+			// std::cout<<"stack: "<<arr_m_stack[i]<<std::endl;
+			// m_internetStack = arr_m_stack[i];
 
-			Ipv4AddressHelper address;
-			address.SetBase ("10.1."+i+".0", "255.255.255.0");
-			arr_interfaces[i] = address.Assign (arr_device[i]);
-			// arr_address[i] = address
+			// InternetStackHelper m_internetStack;
+
+			
+			
+			
+			m_container = arr_m_container[i];
+			// NodeContainer m_container;
+			// m_container.Create(m_n_nodes);
+			
+			m_internetStack.Install(m_container);
+			
+			Ipv4AddressHelper m_ipv4;
+			
+			std::string add;
+			add = "10.1."+std::to_string(i+1)+".0";
+
+			m_ipv4.SetBase (Ipv4Address(add.c_str()), "255.255.255.0");
+			
+			m_device = arr_m_device[i];
+			// NetDeviceContainer m_device;
+			arr_m_adderess[i] = add;
+			// arr_m_adderess[i] = std::string("add_"+m_proto_ip[i][0]);
+			// m_adderess = arr_m_adderess[i];
+			
+			Ipv4InterfaceContainer m_adderess = m_ipv4.Assign (m_device);
+			
+			// m_ipv4.Assign (m_device);
+			Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+
+			// std::cout<<"container: "<<arr_m_container[i]<<std::endl;
+			// std::cout<<"device: "<<arr_m_device[i]<<std::endl;
+			// std::cout<<"stack: "<<arr_m_stack[i]<<std::endl;
+			// std::cout<<"Add: "<<add<<std::endl;
+			// arr_address[i] = m_ipv4;
 		}
 
-		// internetStack.Install (arr_container[i]);
+		// m_internetStack.Install (m_container);
 
-		// Ipv4AddressHelper address;
-		// address.SetBase ("10.1.1.0", "255.255.255.0");
-		// interfaces = address.Assign (nodesDevices);
+		// Ipv4AddressHelper m_ipv4;
+		// m_ipv4.SetBase ("10.1.1.0", "255.255.255.0");
+		// interfaces = m_ipv4.Assign (nodesDevices);
 
 	}
+	
+	void ReceivePacket (Ptr<Socket> socket)
+	{
+	while (socket->Recv ())
+		{
+		NS_LOG_UNCOND ("Received one packet!");
+		}
+	}
+
+	static void GenerateTraffic (Ptr<Socket> socket, uint32_t pktSize, 
+								uint32_t pktCount, Time pktInterval )
+	{
+	if (pktCount > 0)
+		{
+		socket->Send (Create<Packet> (pktSize));
+		Simulator::Schedule (pktInterval, &GenerateTraffic, 
+							socket, pktSize,pktCount-1, pktInterval);
+		}
+	else
+		{
+		socket->Close ();
+		}
+	}
+
 	void
 	Simulation::InstallApplication ()
 	{
+		for (int i = 0; i<m_n_file; ++i)
+		{	
+			// m_internetStack = arr_m_stack[i];
+			// std::cout<<"stack: "<<arr_m_stack[i]<<std::endl;
+			// InternetStackHelper m_internetStack;
+			// arr_m_adderess[i] = std::string("add_"+m_proto_ip[i][0]);
+			// m_adderess = arr_m_adderess[i];
 
-		UdpEchoServerHelper echoServer (9);
+			// Ipv4InterfaceContainer m_adderess;
 
-		serverApps = echoServer.Install (nodes.Get (m_sinkNode));
-		serverApps.Start (Seconds (0.0));
-		serverApps.Stop (Seconds (m_simulationTime));
+			m_container = arr_m_container[i];
+			// NodeContainer m_container;
+			// m_container.Create(m_n_nodes);
 
-		UdpEchoClientHelper echoClient (arr_interfaces[i].GetAddress (2), 9);
-		echoClient.SetAttribute ("MaxPackets", UintegerValue (m_maxPackets));
-		echoClient.SetAttribute ("Interval", TimeValue (Seconds (m_packetInterval)));
-		echoClient.SetAttribute ("PacketSize", UintegerValue (m_packetsSize));
+			m_device = arr_m_device[i];
+			// NetDeviceContainer m_device;
 
-		ApplicationContainer clientApps = echoClient.Install (nodes);
-		clientApps.Start (Seconds (0.0));
-		clientApps.Stop (Seconds (m_simulationTime));
+			UdpEchoServerHelper echoServer (9);
+			serverApps = echoServer.Install (m_container.Get (0));
+			serverApps.Start (Seconds (0.0));
+			serverApps.Stop (Seconds (m_simulationTime));
+											
+			UdpEchoClientHelper echoClient (Ipv4Address (arr_m_adderess[i].c_str()), 9); 
+			
+			echoClient.SetAttribute ("MaxPackets", UintegerValue (m_maxPackets));
+			echoClient.SetAttribute ("Interval", TimeValue (Seconds (m_packetInterval)));
+			echoClient.SetAttribute ("PacketSize", UintegerValue (m_packetsSize));
+			
+			ApplicationContainer clientApps = echoClient.Install (m_container);
+			clientApps.Start (Seconds (0.0));
+			clientApps.Stop (Seconds (m_simulationTime));
+			
+	
+	// TypeId tid = TypeId::LookupByName ("ns3::UdpSocketFactory");
+	// std::cout<<"10"<<std::endl;
+	// Ptr<Socket> recvSink = Socket::CreateSocket (m_container.Get(1), tid);
+	// std::cout<<"3"<<std::endl;
+	// InetSocketAddress local = InetSocketAddress (Ipv4Address::GetAny (), 80);
+	// std::cout<<"4"<<std::endl;
+	// recvSink->Bind (local);
+	// std::cout<<"5"<<std::endl;
+	// recvSink->SetRecvCallback (MakeCallback (&ReceivePacket));
+	// std::cout<<"6"<<std::endl;
 
+	// Ptr<Socket> source = Socket::CreateSocket (m_container.Get(0), tid);
+	// std::cout<<"7"<<std::endl;
+	// InetSocketAddress remote = InetSocketAddress (Ipv4Address ("255.255.255.255"), 80);
+	// std::cout<<"8"<<std::endl;
+	// source->SetAllowBroadcast (true);
+	// std::cout<<"9"<<std::endl;
+	// source->Connect (remote);
+	// std::cout<<"10"<<std::endl;
+
+	// // Output what we are doing
+	// NS_LOG_UNCOND ("Testing " << m_numPackets  << " packets sent with receiver rss " << m_rss);
+
+
+	// Simulator::ScheduleWithContext (source->GetNode ()->GetId (),
+	//                                 Seconds (1.0), &GenerateTraffic, 
+	//                                 source, m_packetSize, m_numPackets, m_interPacketInterval);
+		}
+	// std::cout<<"OK"<<std::endl;
 	}
+
 	void
 	Simulation::GraphicPlot ()
 	{
@@ -516,6 +694,52 @@ class Simulation
 		gnuplot3.GenerateOutput(plotFile3);
 		plotFile3.close();
 	}
+	
+	void Simulation::CreateTrace ()
+	{
+		std::cout<<"TRACE"<<std::endl;
+		std::cout<<"OK"<<std::endl;
+		for (int i = 0; i<m_n_file; ++i)
+		{
+			for (int j = 0; j<m_n_param; ++j)
+			{	
+				PcapHelper pcapHelper;
+				std::cout<<"1"<<std::endl;
+				m_found = m_proto_ip[i][0].find("eth");
+				if (m_found!=std::string::npos && m_n_nodes < 3)
+				{	
+					std::cout<<"2"<<std::endl;
+					// Tracing
+
+					
+					// Criando arquivo pcap
+					Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("simulation.pcap", std::ios::out, PcapHelper::DLT_PPP);
+					std::cout<<"2.1"<<std::endl;
+					// p2p.EnablePcap ("simulation", arr_m_device[i]);
+					std::cout<<"2.2"<<std::endl;
+				}
+				if (m_found!=std::string::npos && m_n_nodes >= 3)
+				{	
+					std::cout<<"3"<<std::endl;
+					// Tracing
+					// Criando arquivo pcap
+					Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("simulation.pcap", std::ios::out, PcapHelper::DLT_PPP);
+					// csma.EnablePcap ("simulation", arr_m_device[i]);
+				}
+
+				m_found = m_proto_ip[i][0].find("radio");
+				if (m_found!=std::string::npos)
+				{	
+					std::cout<<"4"<<std::endl;
+					// Tracing
+					// Criando arquivo pcap
+					Ptr<PcapFileWrapper> file = pcapHelper.CreateFile ("simulation.pcap", std::ios::out, PcapHelper::DLT_PPP);
+					// wifiPhy.EnablePcap ("simulation", arr_m_device[i]);
+				}
+			}
+		}
+		std::cout<<"END_TRACE"<<std::endl;
+	}
 	int
 	Simulation::Run ()
 	{
@@ -523,13 +747,15 @@ class Simulation
 		Mobility ();
 		InstallInternetStack ();
 		InstallApplication ();
-		GraphicPlot ();
+		
+		// GraphicPlot ();
 
 		Simulator::Stop (Seconds (m_simulationTime));
 		Simulator::Run ();
-		GraphicClose ();
-
+		// GraphicClose ();
+		
 		Simulator::Destroy ();
+		CreateTrace ();
 		return 0;
 	}
 	void
@@ -553,7 +779,7 @@ class Simulation
 		
 		char data1[4096];
 		int data2, data3;
-		FILE* f = fopen("/home/carl/New_Results/Files/m_proto_ips.txt", "r");
+		FILE* f = fopen("/home/carl/New_Results/Files/proto_ips.txt", "r");
 		// FILE* f = fopen("data.txt", "r");
 		if(f == NULL) 
 		{
@@ -588,11 +814,11 @@ class Simulation
 
 		}
 
-		for (int i = 0; i < m_n_file; ++i)
-		{
-			std::cout<<"PROTO: "<<m_proto_ip[i][0]<<" IP_SRC:"<<m_proto_ip[i][1]<<" IP_DST: "<<m_proto_ip[i][2]<<std::endl;
+		// for (int i = 0; i < m_n_file; ++i)
+		// {
+		// 	std::cout<<"PROTO: "<<m_proto_ip[i][0]<<" IP_SRC:"<<m_proto_ip[i][1]<<" IP_DST: "<<m_proto_ip[i][2]<<std::endl;
 			
-		}
+		// }
 	}
 int
 main (int argc, char *argv[])
@@ -603,7 +829,7 @@ main (int argc, char *argv[])
 	cenario.ReadFiles();
 	cenario.Configure (argc, argv);
 	cenario.SetProtocol (1);
-	cenario.SetSimulationTime (10);
+	cenario.SetSimulationTime (100);
 	cenario.Run ();
 	
 }
