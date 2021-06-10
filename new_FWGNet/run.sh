@@ -17,12 +17,6 @@ IC="95.0"
 get_pcap="False"
 # Definição da interface a ser analisada
 interface="wlp61s0" 
-# Variável para obter o número de parâmetros, colunas, do arquivo "proto_ips.txt"
-str_n_param="3"
-# Variável que obtem o número de linhas do arquivo "proto_ips.txt"
-str_n_row="3"
-# Variável para obter o número de parametros, colunas, dos arquivos filtrados do trace
-str_n_file_param="2"
 # Definição da ativação do verbose
 str_verbose="True"
 # Definição da taxa da comunicação
@@ -36,8 +30,8 @@ then
     # Exportando interface
     export interface
     # Start capture traffic module
-    # ./Shell/capture.sh
-    echo "End of Capture Module"
+    ./Shell/capture.sh
+    echo "End Capture Module"
 fi
 # Abertura de arquivo .pcap existente get_pcap == "False" get a exist file
 if [[ $get_pcap = "False" ]]
@@ -52,13 +46,21 @@ then
     export case_Study
     # Start filter module (real .pcap file)
     ./Shell/filter.sh
-    echo "End of Real Filter Module"
+    echo "End Real Filter Module"
 fi
 
 
 # Start workload generation module
-# python Python/workload_generation.py "$const_Size" "$type_Size" "$save_Graph" "$case_Study" "$IC"
-echo "End of Workload Generation Module"
+python Python/workload_generation.py "$const_Size" "$type_Size" "$save_Graph" "$case_Study" "$IC"
+echo "End Workload Generation Module"
+
+
+# Variável para obter o número de parâmetros, colunas, do arquivo "proto_ips.txt"
+str_n_param=$(awk -F' ' '{print NF; exit}' < /home/carl/New_Results/Files/proto_ips.txt)
+# Variável que obtem o número de linhas do arquivo "proto_ips.txt"
+str_n_row=$(wc -l < /home/carl/New_Results/Files/proto_ips.txt)
+# Variável para obter o número de parametros, colunas, dos arquivos filtrados do trace
+str_n_file_param="2"
 
 # Start NS3 module 
 # Definindo diretório do NS3
@@ -85,15 +87,15 @@ sudo chmod 777 ${dir_NS3}${file_Myapp}
 cd ${dir_NS3} 
 
 # Run simulation file 
-# sudo ./waf --run "scratch/${file_Simulation} --str_n_param=${str_n_param} --str_n_row=${str_n_row} --str_n_file_param=${str_n_file_param} --str_verbose=${str_verbose} --rate=${rate} --lat=${lat}" # --phyMode=DsssRate2Mbps --rss=-50 --packetSize=500 --numPackets=100 --interval=2 "
-# Debbuger
+sudo ./waf --run "scratch/${file_Simulation} --str_n_param=${str_n_param} --str_n_row=${str_n_row} --str_n_file_param=${str_n_file_param} --str_verbose=${str_verbose} --rate=${rate} --lat=${lat}" # --phyMode=DsssRate2Mbps --rss=-50 --packetSize=500 --numPackets=100 --interval=2 "
+# Debbuger #
 # sudo ./waf --run scratch/${file_Simulation} --command-template="g++ %s"
 
 # Removendo arquivos existentes da pasta do NS3
 sudo rm ${dir_NS3}scratch/${file_Simulation}.cc
 sudo rm ${dir_NS3}${file_Myapp}
 
-echo "End of Simulation Module"
+echo "End Simulation Module"
 
 # Open source directory
 cd ${src}
@@ -105,9 +107,9 @@ export dir_pcap_file
 filter_pcap="ns3"
 export filter_pcap
 # Start filter module (real .pcap file)
-# ./Shell/filter.sh
-echo "End of Simulated Filter Module"
+./Shell/filter.sh
+echo "End Simulated Filter Module"
 # Start compare module
 python Python/compare.py "$const_Size" "$type_Size" "$save_Graph" "$case_Study" "$IC"
-echo "End of Compare Module"
-echo "End of Framework"
+echo "End Compare Module"
+echo "End Framework"
