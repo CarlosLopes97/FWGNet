@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Interface name
-interface="wlp61s0" 
+# interface="wlp61s0" 
 # Save directory and file name
 dir_pcap_file="/tmp/log.pcap"
 export dir_pcap_file

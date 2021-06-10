@@ -60,8 +60,10 @@ public:
   EventId         m_sendEvent;
   bool            m_running;
   int             m_packetsSent;
+  int             m_count;
   double          m_interval;
   int             m_size_pckts;
+  double          time_s;
 
 
 
@@ -115,8 +117,10 @@ MyApp::MyApp ()
     m_sendEvent (),
     m_running (false),
     m_packetsSent (0),
+    m_count (1),
     m_interval (0),
     m_size_pckts (0),
+    time_s (0),
 
     m_n_row (0), 
     m_n_param (0),
@@ -188,6 +192,9 @@ MyApp::Setup (Ptr<Socket> socket, Address address, std::string** app_proto_ip, i
   aux_m_n_rows_Size = n_rows_Size;
   aux_m_n_rows_Time = n_rows_Time;
   aux_m_n_packets = n_packets;
+  // std::cout<<"0"<<std::endl;
+  // std::cout<<"SETUP PROTO: "<<proto<<std::endl;
+  // std::cout<<"SETUP APP_PROTO: "<< aux_m_app_proto_ip<<std::endl;
 
 
   Get_var();
@@ -207,38 +214,46 @@ MyApp::Get_var (void)
   m_n_rows_Size = aux_m_n_rows_Size;
   m_n_rows_Time = aux_m_n_rows_Time;
   m_n_packets = aux_m_n_packets;
+  // std::cout<<"Get var ID: "<<m_id_proto<<std::endl;
+  // std::cout<<"Get var PROTO: "<<m_proto[m_id_proto]<<std::endl;
+  // std::cout<<"Get var APP_PROTO: "<< m_app_proto_ip[m_id_proto][0]<<std::endl;
   m_id_proto++;
+  
 }
 
 
 void
 MyApp::StartApplication (void)
 {
-  
-  // read_RV();
-  std::cout<<"StartApplication"<<std::endl;
-  m_running = true;
-  m_packetsSent = 0;
-  m_socket->Bind ();
-  m_socket->Connect (m_peer);
-  SendPacket ();
-  
-}
+  if(m_sum_packets > 0 && m_sum_packets > m_packetsSent)
+  {
+    // std::cout<<"1"<<std::endl;
+    m_running = true;
+    m_packetsSent = 0;
+    m_socket->Bind ();
+    m_socket->Connect (m_peer);
+    SendPacket ();
+  }else
+  {
+    StopApplication ();
+  }
+
+  }
+
 
 void
 MyApp::StopApplication (void)
 {
+  // std::cout<<"2"<<std::endl;
   m_running = false;
 
   if (m_sendEvent.IsRunning ())
     {
-      std::cout<<"OK SendEvent"<<std::endl;
       Simulator::Cancel (m_sendEvent);
     }
 
   if (m_socket)
     {
-      std::cout<<"OK IF Socket"<<std::endl;
       m_socket->Close ();
     }
 }
@@ -246,269 +261,100 @@ MyApp::StopApplication (void)
 void
 MyApp::SendPacket (void)
 {
+  // std::cout<<"3"<<std::endl;
 
-
-  if (m_proto[m_id_arrays] == m_app_proto_ip[m_id_arrays][0])
+  if (stod(m_n_rows_Size[m_id_arrays][1]) > 1)
   {
     m_aux_n_Size = stod(m_n_rows_Size[m_id_arrays][1])-1;
     m_size_pckts = std::stod(m_arr_Sizes[m_aux_n_Size][m_id_arrays]);
     m_n_rows_Size[m_id_arrays][1] = std::to_string(stod(m_n_rows_Size[m_id_arrays][1])-1); 
-  }
-  
-  if (stod(m_n_rows_Size[m_id_arrays][1]) == 1)
-  {
-    m_proto[m_id_arrays] = "NULL";
-    std::cout<< m_proto[m_id_arrays] <<std::endl;
+    Ptr<Packet> packet = Create<Packet> (m_size_pckts);
+    m_socket->Send (packet);
+  }else{
+    // std::cout<<" "<<std::endl;
+    // std::cout<<"SUM CONTROL - PROTO: "<< m_proto[m_id_arrays] <<std::endl;
     m_sum_packets = m_sum_packets - stod(m_n_packets[m_id_arrays][1]);
-    // m_id_arrays++;
+    // std::cout<<"SUM CONTROL - SUM: "<<m_sum_packets <<std::endl;
   }
 
+  // std::cout<<" "<<std::endl;
+  // std::cout<<"SEND ID: "<<m_id_arrays<<std::endl;
+  // std::cout<<"SEND SUM "<<m_sum_packets<<std::endl;
+  // std::cout<<"SEND PROTO: "<<m_proto[m_id_arrays]<<std::endl;
+  // std::cout<<"SEND APP_PROTO: "<< m_app_proto_ip[m_id_arrays][0]<<std::endl;
+  // std::cout<<"SEND SENT PACKETS "<<m_packetsSent<<std::endl;
+  // std::cout<<"SEND PACKETS ID SIZE "<<stod(m_n_rows_Size[m_id_arrays][1])<<std::endl;
+  
   // Ptr<Packet> packet = Create<Packet> (m_packetSize);
-  Ptr<Packet> packet = Create<Packet> (m_size_pckts);
-  m_socket->Send (packet);
+  
+  // if (m_count <= m_sum_packets){
+  //   // std::cout<<"COUNT "<<m_count<<std::endl;
+    
+  //   m_count++;
+    
+  // }else{
+  //   m_packetsSent = m_sum_packets;
+
+  // }
 
   if (++m_packetsSent < m_sum_packets)
-    {  
-      ScheduleTx ();
-    }
+  {  
+    ScheduleTx ();
+  }else{
+    StopApplication ();
+  }
 }
 
 void
 MyApp::ScheduleTx (void)
 {
+// std::cout<<"4"<<std::endl;
   if (m_running)
-    {
-      if (m_proto[m_id_arrays] == m_app_proto_ip[m_id_arrays][0])
-      {   
-        m_aux_n_Time = stod(m_n_rows_Time[m_id_arrays][1])-1;
+    {       
+      if (stod(m_n_rows_Time[m_id_arrays][1]) > 1)
+      {
+        
+        m_aux_n_Time = (stod(m_n_rows_Time[m_id_arrays][1])-1);
         m_interval = stod(m_arr_Times[m_aux_n_Time][m_id_arrays]);
         m_n_rows_Time[m_id_arrays][1] = std::to_string(stod(m_n_rows_Time[m_id_arrays][1])-1);
-      }
+        // std::cout<<" "<<std::endl;
+        // std::cout<<"Schedule ID: "<<m_id_arrays<<std::endl;
+        // std::cout<<"Schedule m_n_rows_Time: "<<m_n_rows_Time[m_id_arrays][1]<<std::endl;
+        // std::cout<<"Schedule m_aux_n_Time: "<<m_aux_n_Time<<std::endl;
+        // std::cout<<"Schedule m_arr_Times: "<<m_arr_Times[m_aux_n_Time][m_id_arrays]<<std::endl;
 
         // std::cout<<" "<<std::endl;
-        // std::cout<<"ID: "<<m_id_arrays<<std::endl;
-        // std::cout<<"SUM "<<m_sum_packets<<std::endl;
-        // std::cout<<"PROTO: "<<m_proto[m_id_arrays]<<std::endl;
-        // std::cout<<"tNEXT "<<m_interval<<std::endl;
-        // std::cout<<"APP_PROTO: "<< m_app_proto_ip[m_id_arrays][0]<<std::endl;
-        // std::cout<<"SENT PACKETS "<<m_packetsSent<<std::endl;
-        // std::cout<<"COUNT SENT PACKETS "<<stod(m_n_rows_Size[m_id_arrays][1])<<std::endl;
+        // std::cout<<"Schedule ID: "<<m_id_arrays<<std::endl;
+        // std::cout<<"Schedule SUM "<<m_sum_packets<<std::endl;
+        // std::cout<<"Schedule PROTO: "<<m_proto[m_id_arrays]<<std::endl;
+        // std::cout<<"Schedule APP_PROTO: "<< m_app_proto_ip[m_id_arrays][0]<<std::endl;
+        // std::cout<<"Schedule SENT PACKETS "<<m_packetsSent<<std::endl;
+        // std::cout<<"Schedule PACKETS ID - TIME "<<stod(m_n_rows_Time[m_id_arrays][1])<<std::endl;
+        time_s = m_interval + time_s;
+        // std::cout<<"TimeSimulation: "<<time_s<<std::endl;
+        Time tNext (Seconds (m_interval));
+        m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
+      }else{
+
+        if (m_id_arrays >= m_n_row-1)
+          {
+            m_id_arrays = 0;
+          }else
+          {
+            m_id_arrays++;
+          }
+        SendPacket();
+      }
+
+      
         
 
 
-      Time tNext (Seconds (m_interval));
+
       
-      if (m_id_arrays >= m_n_row-1)
-      {
-        m_id_arrays = 0;
-      }
-      else
-      {
-        m_id_arrays++;
-      }
-      // Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
-      
-      m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
+  
+        // Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
+        
       
     }
 }
-
-// void
-// MyApp::m_ReadFiles (void)
-// {
-  
-//   FILE* f = fopen("/home/carl/New_Results/Files/proto_ips.txt", "r");
-  
-//   // FILE* f = fopen("data.txt", "r");
-//   if(f == NULL) 
-//   {
-//     std::cout<<"cant open file"<<std::endl;
-//     std::cout<<m_proto<<" proto"<<std::endl;
-  
-//   }
-  
-//   else
-//   {
-//     char *get_proto;
-//     char *get_ip_src;
-//     char *get_ip_dst;
-//     char data1[1024], data2[100], data3[100];
-//     int i = 0;
-//     while(fscanf(f, "%s %s %s", data1, data2, data3) == m_n_param) 
-//     {
-      
-//       get_proto = data1;    
-//       if (get_proto)  
-//       m_proto[i][0] = get_proto;
-      
-//       get_ip_src = data2; 
-//       if (get_ip_src)  
-//       m_proto[i][1] = get_ip_src;
-      
-//       get_ip_dst = data3;
-//       if (get_ip_dst)  
-//       m_proto[i][2] = get_ip_dst;
-//       i++;
-//     }
-    
-//     fclose(f);
-//   }
-  
-  
-//   FILE* fS = fopen("/home/carl/New_Results/Files/list_tr_size.txt", "rb");
-  
-//   // FILE* f = fopen("data.txt", "r");
-//   if(fS == NULL) 
-//   {
-//     std::cout<<"cant open file"<<std::endl;
-//     std::cout<<m_proto<<" proto"<<std::endl;
-  
-//   }
-  
-//   else
-//   {
-    
-  
-    
-//     char *get_proto_size;
-//     char *get_s_size;
-//     char data2_s[100], data1_s[1024];
-//     int i = 0;
-//     while((fscanf(fS, "%s %s", data1_s, data2_s)) == 2)
-//     { 
-//       // std::cout<<"SIZE ----> Data1: "<<data1_s<<" Data2: "<<data2_s<<std::endl;
-//       // std::cout<<"OK While"<<std::endl;
-//       get_proto_size = data1_s;    
-//       if (get_proto_size)  
-//       m_n_rows_Size[i][0] = get_proto_size;
-//       m_n_packets[i][0] = get_proto_size;
-      
-//       get_s_size = data2_s; 
-//       if (get_s_size)  
-//       m_n_rows_Size[i][1] = get_s_size;
-//       m_n_packets[i][1] = get_s_size;
-      
-//       i++;
-//     }
-    
-//     fclose(fS);
-//   }
-
-//   FILE* fT = fopen("/home/carl/New_Results/Files/list_tr_time.txt", "r");
-  
-//   // FILE* f = fopen("data.txt", "r");
-//   if(fT == NULL) 
-//   {
-//     std::cout<<"cant open file"<<std::endl;
-//     std::cout<<m_proto<<" proto"<<std::endl;
-  
-//   }
-  
-//   else
-//   {
-
-
-    
-//     char *get_proto_time;
-//     char *get_s_time;
-//     char data2_t[100], data1_t[1024];
-//     int i = 0;
-//     while(fscanf(fT, "%s %s", data1_t, data2_t) == 2) 
-//     {
-//       // std::cout<<"TIME ------> Data1: "<<data1_t<<" Data2: "<<data2_t<<std::endl;
-//       get_proto_time = data1_t;    
-//       if (get_proto_time)  
-//       m_n_rows_Time[i][0] = get_proto_time;
-      
-//       get_s_time = data2_t; 
-//       if (get_s_time)  
-//       m_n_rows_Time[i][1] = get_s_time;
-      
-//       i++;
-//     }
-    
-//     fclose(fT);
-//   }
-  
-// }
-// void 
-// MyApp::read_RV(void)
-// { 
-//   m_ReadFiles();
-
-//   for (int i = 0; i < m_n_row; ++i)
-//   {
-//     int aux_n_Rows_Time = stod(m_n_rows_Time[i][1]);
-//     int aux_n_Rows_Size = stod(m_n_rows_Size[i][1]);  
-    
-//     FILE *arq_Time;
-//     FILE *arq_Size;
-//     char row_Time[aux_n_Rows_Time];
-//     char row_Size[aux_n_Rows_Size];
-//     char *aux_Time;
-//     char *aux_Size;
-//     char *res_Time;
-//     char *res_Size;
-
-//     m_dir_size = "/home/carl/New_Results/Files/";
-//     m_dir_time = "/home/carl/New_Results/Files/";
-
-//     m_dir_size += m_proto[i][0];
-//     m_dir_size += "_size.txt";
-    
-//     m_dir_time += m_proto[i][0];
-//     m_dir_time += "_time.txt";
-
-//     // Abre um arquivo TEXTO para LEITURA
-//     arq_Time = fopen(m_dir_time.c_str(), "rb"); 
-//     arq_Size = fopen(m_dir_size.c_str(), "rb");
-
-//     if (arq_Size == NULL)  // Se houve erro na abertura
-//     {
-//         std::cout<<"Unable to opem"<<std::endl;
-//     }
-//     if (arq_Time == NULL)  // Se houve erro na abertura
-//     {
-//         std::cout<<"Unable to opem"<<std::endl;
-//     }
-      
-//       m_arr_Sizes[0][i] = m_proto[i][0];
-      
-//       for (int j = 1; j<aux_n_Rows_Size; ++j)
-//       { 
-//         // Lê uma linha (inclusive com o '\n')
-//         res_Size = fgets(row_Size, aux_n_Rows_Size, arq_Size);  // Ler os caracteres ou até '\n'
-//         if (res_Size)  // Se foi possível ler
-//         aux_Size = row_Size;
-//         m_arr_Sizes[j][i] = aux_Size;
-        
-//       }
-      
-//       m_arr_Times[0][i] = m_proto[i][0];
-      
-//       for (int j = 1; j<aux_n_Rows_Time; ++j)
-//       { 
-//         // Lê uma linha (inclusive com o '\n')
-//         res_Time = fgets(row_Time, aux_n_Rows_Time, arq_Time);
-//          // Ler os caracteres ou até '\n'
-//         if (res_Time)  // Se foi possível ler
-//         aux_Time = row_Time;
-        
-//         m_arr_Times[j][i] = aux_Time;
-//       }
-
-//     fclose (arq_Size);
-//     fclose (arq_Time);
-//   }
-//   // for(int i=0;i<m_n_row;++i)
-//   // {
-//   //   for(int j=0;j<m_max_row_time;++j)
-//   //   {
-//   //     std::cout<<m_arr_Times[j][i]<<"   ";
-//   //   }
-//   // }
-
-// }
-
-
-

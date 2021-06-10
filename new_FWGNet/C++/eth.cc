@@ -29,10 +29,8 @@ using namespace ns3;
 // Default Network Topology
 //
 //       10.1.1.0
-// n0 -------------- n1   n2   n3   n4
-//    point-to-point  |    |    |    |
-//                    ================
-//                      LAN 10.1.2.0
+// n0 -------------- n1   
+//    point-to-point  
 
 
 
@@ -64,26 +62,6 @@ std::string* create_arr(int rows)
 	}
 	return table;
 }
-
-
-
-
-// interval = 0.1;
-// size_pckts = 0;
-// id_arrays = 0;
-// n_file_param = 2;
-// n_packets = create_mat(n_row, n_file_param);
-// arr_Times = create_mat(max_row_time, n_row);
-// arr_Sizes = create_mat(max_row_size, n_row);
-// n_rows_Size = create_mat(n_row, n_file_param);
-// n_rows_Time = create_mat(n_row, n_file_param);
-// proto_ip = create_mat(n_row, n_param);
-// dir_size = "";
-// dir_time = "";
-// aux_n_Size = 0;
-// aux_n_Time = 0;
-
-
 
 void ReadFiles (std::string** proto_ip, std::string* proto, std::string** n_rows_Size, std::string** n_rows_Time, std::string** n_packets, int n_param ,int n_file_param)
 {
@@ -210,9 +188,9 @@ void read_RV(std::string** n_rows_Size, std::string** n_rows_Time, std::string**
 
   for (int i = 0; i < n_row; ++i)
   {
+    int aux_n_Rows_Time = stoi(n_rows_Time[i][1]);
 
-    int aux_n_Rows_Time = stod(n_rows_Time[i][1]);
-    int aux_n_Rows_Size = stod(n_rows_Size[i][1]);  
+    int aux_n_Rows_Size = stoi(n_rows_Size[i][1]);  
 
     FILE *arq_Time;
     FILE *arq_Size;
@@ -299,26 +277,49 @@ int count_Lines(std::string dir)
 int 
 main (int argc, char *argv[])
 {
-  int n_param = 3;
-  int n_row = 3;
-  int n_file_param = 2;
-  int n_nodes = 2;
 
-  int p2p_n_nodes = 2;
+  int n_param=0;
+  int n_row=0;
+  int n_file_param=0;
+  bool verbose;
+
+  std::string str_n_param = "0";
+  std::string str_n_row = "0";
+  std::string str_n_file_param = "0";
+  std::string str_verbose = "true";
+  
+  std::string rate = "500kb/s";
+  std::string lat = "2ms";
+
+  CommandLine cmd;
+  cmd.AddValue ("str_n_param", "Numero de parametros", str_n_param);
+  cmd.AddValue ("str_n_row","Linhas", str_n_row);
+  cmd.AddValue ("str_n_file_param","Parametros", str_n_file_param);
+  cmd.AddValue ("str_verbose","verbose ativado", str_verbose);
+  cmd.AddValue ("rate","Taxa", rate);
+  cmd.AddValue ("lat","latencia", lat);
+  cmd.Parse (argc, argv);
+
+  n_param = stoi(str_n_param);
+  n_row = stoi(str_n_row);
+  n_file_param = stoi(str_n_file_param);
+    
+  int n_nodes = 2;
+  int p2p_n_nodes = 0;
   int max_row_time = 0;
   int max_row_size = 0;
   int n_lines_Time = 0;
   int n_lines_Size = 0;
   int sum_packets = 0;
   int id_arrays = 0;
+  // int time_stop_simulation = 60.81;
+  // int time_stop_simulation = 10000;
 
   std::string** proto_ip = create_mat(n_row, n_param);
   std::string* proto = create_arr(n_row);
   std::string** n_packets = create_mat(n_row, n_file_param);
   std::string** n_rows_Size = create_mat(n_row, n_file_param);
   std::string** n_rows_Time = create_mat(n_row, n_file_param);
-  std::string lat = "2ms";
-  std::string rate = "500kb/s";
   std::string type = "myapp";
   std::string dir_time = "";
   std::string dir_size = "";
@@ -362,6 +363,7 @@ main (int argc, char *argv[])
     }
     
   }
+
   max_row_size++;
   max_row_time++;
   std::string** arr_Times = create_mat(max_row_time, n_row);
@@ -369,18 +371,10 @@ main (int argc, char *argv[])
 
 
 
-  // std::string** proto_ip;
-  // std::string dir_time;
-  // std::string dir_size;
-
-
-  // CommandLine cmd (__FILE__);
-  // cmd.AddValue ("nCsma", "Number of \"extra\" CSMA nodes/devices", nCsma);
-  // cmd.AddValue ("verbose", "Tell echo applications to log if true", verbose);
-
   read_RV(n_rows_Size, n_rows_Time, proto_ip, arr_Sizes, arr_Times, n_row, dir_size, dir_time);
   
-  bool verbose = true;
+  // verbose = boost::lexical_cast<bool>(str_verbose);
+  std::istringstream(str_verbose) >> verbose;
   // uint32_t nCsma = 3;
 
   if (verbose)
@@ -388,16 +382,6 @@ main (int argc, char *argv[])
       LogComponentEnable ("UdpEchoClientApplication", LOG_LEVEL_INFO);
       LogComponentEnable ("UdpEchoServerApplication", LOG_LEVEL_INFO);
     }
-
-  // uint32_t packetSize = 1024;
-  // uint32_t n_packets = 100;
-  // double interval = 2;
-
-  // int csma_n_nodes = 0;
-  // int wifi_n_nodes = 0;
-
-  // proto_ip (create_mat(n_row, n_param));
-
 
   NodeContainer p2p_nodes;
   NetDeviceContainer p2p_devices;
@@ -504,7 +488,15 @@ main (int argc, char *argv[])
     PacketSinkHelper packetSinkHelper1 ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
     ApplicationContainer sinkApps1 = packetSinkHelper1.Install (p2p_nodes.Get (1)); //n2 as sink
     sinkApps1.Start (Seconds (0.));
-    sinkApps1.Stop (Seconds (1000));
+    // sinkApps1.Stop (Seconds (time_stop_simulation));
+
+    std::ofstream myfile_ip_1("/home/carl/New_Results/Files/ns3_ip.txt");
+    if (myfile_ip_1.is_open()){
+      myfile_ip_1 << proto[0] + ";" + "10.1.1."+std::to_string(1) + "\n";
+      myfile_ip_1 << proto[1] + ";" + "10.1.1."+std::to_string(2) + "\n";
+      myfile_ip_1.close();
+    }
+
 
     Ptr<Socket> ns3UdpSocket1 = Socket::CreateSocket (p2p_nodes.Get (0), UdpSocketFactory::GetTypeId ()); //source at n0
     
@@ -517,7 +509,7 @@ main (int argc, char *argv[])
     p2p_nodes.Get (0)->AddApplication (app1);
 
     app1->SetStartTime (Seconds (0.));
-    app1->SetStopTime (Seconds (1000));
+    // app1->SetStopTime (Seconds (time_stop_simulation));
 
 
 
@@ -525,8 +517,9 @@ main (int argc, char *argv[])
     PacketSinkHelper packetSinkHelper2 ("ns3::UdpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), sinkPort));
     ApplicationContainer sinkApps2 = packetSinkHelper2.Install (p2p_nodes.Get (0)); //n2 as sink
     sinkApps2.Start (Seconds (0.));
-    sinkApps2.Stop (Seconds (1000));
-
+    // sinkApps2.Stop (Seconds (time_stop_simulation));
+    
+    
     Ptr<Socket> ns3UdpSocket2 = Socket::CreateSocket (p2p_nodes.Get (1), UdpSocketFactory::GetTypeId ()); //source at n0
 
     // Create UDP application at n0
@@ -535,7 +528,7 @@ main (int argc, char *argv[])
     app2->Setup (ns3UdpSocket2, sinkAddress2, proto_ip, n_row, n_file_param, n_param, id_arrays, n_packets, arr_Times, arr_Sizes, n_rows_Size, n_rows_Time, max_row_size, max_row_time, proto[1], sum_packets, 1, false);
     p2p_nodes.Get (1)->AddApplication (app2);
     app2->SetStartTime (Seconds (0.));
-    app2->SetStopTime (Seconds (1000));
+    // app2->SetStopTime (Seconds (time_stop_simulation));
     
     
     // Address sinkAddress2 (InetSocketAddress (p2p_interfaces.GetAddress (0), sinkPort)); // interface of n24

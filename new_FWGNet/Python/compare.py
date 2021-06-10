@@ -1,6 +1,6 @@
 # coding: utf-8
 
-
+import sys
 import pandas as pd
 import numpy as np
 import scipy
@@ -24,273 +24,127 @@ from matplotlib.ticker import FixedLocator, FixedFormatter
 import warnings
 warnings.filterwarnings("ignore")
 
-# Função de comparação dos resultados obtidos com o NS3 com os dados dos traces
-# Esta função é utilizada apenas quando o método de geração variáveis aleatórias selecionado é por "Trace"
-def compare(app_protocol, n_users):
-    # Chamando variáveis globais
-    global t_time
-    global t_size
-    global req_t_size
-    global req_t_time
-    global resp_t_size
-    global resp_t_time
-    global plot
-    global const_Size
-    global t_net
-    global IC
-    # global time_ns3
-    # global size_ns3
 
-    if app_protocol == "udp" or app_protocol == "tcp":
-        Applications = ["Send"]
-        
-        ns3_df = pd.read_csv("scratch/compare_"+app_protocol+".txt", sep=";",  names=["Time", "Size"])
-        ns3_df = ns3_df[ns3_df.Size != 0]
-        # print(ns3_df[0:10])
-        # print(time_ns3_df.describe())
-        time_ns3 = np.array(ns3_df['Time'])
-        
-        time_ns3.sort()
-        # print("Pré: ",time_ns3)
-        sub = []
-        
-        for i in range(0, len(time_ns3)-1):
-            sub.append(time_ns3[i+1] - time_ns3[i])
-            # print((time_ns3[i+1] - time_ns3[i]),"\t", time_ns3[i],"\t","\n")
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        time_ns3 = np.array(sub)
-        time_ns3 = time_ns3.astype(float)
-        # time_ns3 = np.delete(time_ns3, np.where(time_ns3 == 0))
-        time_ns3.sort()
-        
-        if const_Size == "False":
-            size_ns3 = np.array(ns3_df['Size'])
-            # size_ns3 = np.delete(size_ns3, np.where(size_ns3 == 0))
-
-    if app_protocol == "http":
-        Applications = ["Request","Response"]
-        ############################# SIZE #############################
-        # Abrindo arquivos .txt
-        ns3_df = pd.read_csv("scratch/compare_"+app_protocol+".txt", sep=";",  names=["Time", "SRC", "DST","Size"])
-        
-        ns3_df = ns3_df[ns3_df.Size != 0]
-        # print(ns3_df[:20])
-
-        grouped_src = ns3_df.groupby(ns3_df.SRC)
-        for i in range(1, n_users):
-            req_df = grouped_src.get_group("192.168.1."+str(i))
-            
-            time_req_ns3[i] = req_df.loc[df["SRC"] == "192.168.1."+str(i), 'Time']
-
-            time_req_ns3 = np.array(req_df['Time'])
-
-
-
-        grouped_dst = ns3_df.groupby(ns3_df.DST)
-        for i in range(1, n_users):
-            resp_df = grouped_dst.get_group("192.168.1."+str(i))
-            time_resp_ns3[i] = np.array(resp_df[i]['Time'])
-        
-        print(req_df)
-        print(resp_df)
-        
-        # req_df = grouped.get_group(8080)
-        # resp_df = grouped.get_group(8081)
-        # resp_df = grouped.get_group(49153)
-        # req_df = grouped.get_group(49153)
-
-        # print("Client: \n",client_df[:10])
-        # print("Server: \n",server_df[:10])
-
-        # time_resp_ns3 = np.array(resp_df['Time'])
-        # time_req_ns3 = np.array(req_df['Time'])
-
-        time_resp_ns3.sort()
-        sub = []
-        
-        for i in range(0, len(time_resp_ns3)-1):
-            sub.append(time_resp_ns3[i+1] - time_resp_ns3[i])
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        time_resp_ns3 = np.array(sub)
-        time_resp_ns3 = time_resp_ns3.astype(float)
-        time_resp_ns3 = np.delete(time_resp_ns3, np.where(time_resp_ns3 == 0))
-        time_resp_ns3.sort()
-
-        time_req_ns3.sort()
-        sub = []
-        
-        for i in range(0, len(time_req_ns3)-1):
-            sub.append(time_req_ns3[i+1] - time_req_ns3[i])
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        time_req_ns3 = np.array(sub)
-        time_req_ns3 = time_req_ns3.astype(float)
-        time_req_ns3 = np.delete(time_req_ns3, np.where(time_req_ns3 == 0))
-        time_req_ns3.sort()
-        
-        
-
-        if const_Size == "False":
-            size_req_ns3 = np.array(req_df['Size'])
-            size_req_ns3 = np.delete(size_req_ns3, np.where(size_req_ns3 == 0))
-
-            size_resp_ns3 = np.array(req_df['Size'])
-            size_resp_ns3 = np.delete(size_resp_ns3, np.where(size_resp_ns3 == 0))
-        # time_req_ns3 = np.around(time_req_ns3, 3)
-        np.savetxt('scratch/'+'compare_'+app_protocol+'_time_req_ns3.txt', time_req_ns3, delimiter=',', fmt='%f')
-        del req_df
-        del resp_df          
-        
-    if app_protocol == "ftp" or app_protocol == "hls":
-        Applications = ["Request","Response", "Send"]
-        ############################# REQUEST AND RESPONSE #############################
-        # Abrindo arquivos .txt
-        ns3_df = pd.read_csv("scratch/compare_"+app_protocol+".txt", sep=";",  names=["Time", "Port","Size"])
-        # print(ns_df[:10])
-        ns3_df = ns3_df[ns3_df.Size != 0]
+def ksvalid(size, Dobs, IC):
+    # Definir intervalo de confiança
+    # IC = 99.90 -> alpha = 0.10
+    # IC = 99.95 -> alpha = 0.05
+    # IC = 99.975 -> alpha = 0.025
+    # IC = 99.99 -> alpha = 0.01
+    # IC = 99.995 -> alpha = 0.005
+    # IC = 99.999 -> alpha = 0.001
     
-        grouped = ns3_df.groupby(ns3_df.Port)
-
-        req_df = grouped.get_group(8080)
-        resp_df = grouped.get_group(8081)
-        send_df = grouped.get_group(8082)
-
-        # print("Client: \n",client_df[:10])
-        # print("Server: \n",server_df[:10])
-
-        time_req_ns3 = np.array(req_df['Time'])
-        time_resp_ns3 = np.array(resp_df['Time'])
-        time_ns3 = np.array(send_df['Time'])
-
-        # time_ns3 = np.cumsum(time_ns3)
-        # np.savetxt("scratch/compare_time.txt",time_ns3,fmt='%f',delimiter=',')
-
-        time_resp_ns3.sort()
-        sub = []
+    
+    D_critico = 0
+    rejects = ""
+    
+    str_IC = str(IC)+"%"
+    
+    if (size<=35):
+        ks_df = pd.read_csv("/home/carl/New_Results/Files/kstest.txt", sep=";")
+        # print(ks_df)
+        D_critico = ks_df[""+str_IC+""].iloc[size-1]
         
-        for i in range(0, len(time_resp_ns3)-1):
-            sub.append(time_resp_ns3[i+1] - time_resp_ns3[i])
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        time_resp_ns3 = np.array(sub)
-        time_resp_ns3 = time_resp_ns3.astype(float)
-        time_resp_ns3 = np.delete(time_resp_ns3, np.where(time_resp_ns3 == 0))
-        time_resp_ns3.sort()
-
-        
-
-        time_req_ns3.sort()
-        sub = []
-        
-        for i in range(0, len(time_req_ns3)-1):
-            sub.append(time_req_ns3[i+1] - time_req_ns3[i])
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        time_req_ns3 = np.array(sub)
-        time_req_ns3 = time_req_ns3.astype(float)
-        time_req_ns3 = np.delete(time_req_ns3, np.where(time_req_ns3 == 0))
-        time_req_ns3.sort()
-
-        time_ns3.sort()
-        # print("Pré: ",time_ns3)
-        sub = []
-        
-        for i in range(0, len(time_ns3)-1):
-            sub.append(time_ns3[i+1] - time_ns3[i])
-            # print((time_ns3[i+1] - time_ns3[i]),"\t", time_ns3[i],"\t","\n")
-        
-        # Passando valores resultantes para a variável padrão req_t_time
-        time_ns3 = np.array(sub)
-        time_ns3 = time_ns3.astype(float)
-        time_ns3 = np.delete(time_ns3, np.where(time_ns3 == 0))
-        time_ns3.sort()
-        
-        if const_Size == "False":
-            size_req_ns3 = np.array(req_df['Size'])
-            size_req_ns3 = np.delete(size_req_ns3, np.where(size_req_ns3 == 0))
-
-            size_resp_ns3 = np.array(req_df['Size'])
-            size_resp_ns3 = np.delete(size_resp_ns3, np.where(size_resp_ns3 == 0))
-            
-            size_ns3 = np.array(send_df['Size'])
-            size_ns3 = np.delete(size_ns3, np.where(size_ns3 == 0))
-        # print("Pós: ",time_ns3)
-        
-        # fig, ax = plt.subplots(1, 1)
-        # ax = sns.distplot(time_ns3)
-        # plt.title("DF Simulate")
-        # plt.show()
-
-        del req_df
-        del resp_df
-        del send_df
-         
-   
-    # Definindo o parametro da rede a ser comparado
-    if const_Size == "False":
-        Parameters = ["Size", "Time"]
     else:
-        Parameters = ["Time"]
+        # Condição para definir o D_critico de acordo com o tamanho dos dados
+        if str_IC == "99.80%":
+            D_critico = 1.07/np.sqrt(size)
+        if str_IC == "99.85%":
+            D_critico = 1.14/np.sqrt(size)
+        if str_IC == "90.0%":
+            D_critico = 1.224/np.sqrt(size)
+        if str_IC == "95.0%":
+            D_critico = 1.358/np.sqrt(size)
+        if str_IC == "99.0%":
+            D_critico = 1.628/np.sqrt(size)
     
-    Methods = ["kstest"]
-    # Methods = ["qq_e_pp","kstest","graphical"]
+    D_critico = np.around(D_critico, 2)
+    # 0.20"	;	       "0.15"	;	 "0.10"	;	 "0.05"	;	     "0.01"
+    # "1.07/sqrt(n)";"1.14/sqrt(n)";"1.22/sqrt(n)";"1.36/sqrt(n)";"1.63/sqrt(n)"
+
+    # Condição para aceitar a hipótese nula do teste KS
+    if Dobs > D_critico:
+        rejects = "Reject the Null Hypothesis"
+    else:
+        rejects = "Fails to Reject the Null Hypothesis"
     
-    for meth in Methods:
-        for app in Applications:
+    # IC = IC[:-1]
+    str_IC = str_IC.replace('%', '')
+    # print("IC: ", IC)
+    return rejects, D_critico
+
+
+def plot_histogram(y, save_Graph, parameter, case_Study, proto):
+    if save_Graph == True:
+        fig, ax = plt.subplots(1, 1)
+        ax = sns.distplot(y)
+        plt.title("Histogram of flow "+proto+" ("+parameter+")")
+        fig.savefig("/home/carl/New_Results/Graphics/"+case_Study+"_histogram_"+proto+"_"+parameter, fmt="png",dpi=1000)
+        plt.close()
+
+
+def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
+    ks_first = True
+    for proto in ns3_arr_protocols:
+        # time_ns3_df = pd.read_csv('/home/carl/New_Results/Files/ns3_'+proto+'_time.txt', sep="",  names=["Time"])
+        time_ns3 = np.loadtxt("/home/carl/New_Results/Files/ns3_"+proto+"_time.txt", usecols=0)
+        time_ns3_df = pd.DataFrame(data=time_ns3,columns=["Time"])
+        # print("NS3", proto)
+        # print(time_ns3_df.describe())
+        # time_ns3 = np.array(time_ns3_df['Time'])
+        time_ns3 = time_ns3.astype(float)
+
+        # size_ns3_df = pd.read_csv('/home/carl/New_Results/Files/ns3_'+proto+'_size.txt', sep="",  names=["Size"])
+        size_ns3 = np.loadtxt("/home/carl/New_Results/Files/ns3_"+proto+"_size.txt", usecols=0)
+        # print(ns3_df.describe())
+        # size_ns3 = np.array(size_ns3_df['Size'])
+        size_ns3 = size_ns3.astype(float)           
+
+
+
+        time_trace = np.loadtxt("/home/carl/New_Results/Files/"+proto+"_time.txt", usecols=0)
+        time_trace_df = pd.DataFrame(data=time_trace,columns=["Time"])
+        # print("TRACE", proto)
+        # print(time_trace_df.describe())
+        # time_trace = np.array(time_trace['Time'])
+        time_trace = time_trace.astype(float)
+
+        size_trace = np.loadtxt("/home/carl/New_Results/Files/"+proto+"_size.txt", usecols=0)
+        # print(trace.describe())
+        # size_trace = np.array(size_trace['Size'])
+        size_trace = size_trace.astype(float)   
+    
+        # Definindo o parametro da rede a ser comparado
+        if const_Size == "False":
+            Parameters = ["Size", "Time"]
+        else:
+            Parameters = ["Time"]
+        
+        Methods = ["kstest"]
+        # Methods = ["qq_e_pp","kstest","graphical"]
+
+        # ks_first = True
+        
+        for meth in Methods:
             for parameter in Parameters:
                 
-                if parameter == "Size" and app == "Request":
-                    # Adicionando valores gerados pelo NS3
-                    x = size_req_ns3
-                    # x = data_size_ns3
-                    # Adicionando valores do trace
-                    y = req_t_size
-                    # y = data_size
-                if parameter == "Time" and app == "Request":
-                    # Adicionando valores gerados pelo NS3
-                    x = time_req_ns3
-                    # x = data_size_ns3
-                    # Adicionando valores do trace
-                    y = req_t_time
-                    # y = data_size
-                if parameter == "Size" and app == "Response":
-                    # Adicionando valores gerados pelo NS3
-                    x = size_resp_ns3
-                    # x = data_size_ns3
-                    # Adicionando valores do trace
-                    y = resp_t_size
-                    # y = data_size
-                if parameter == "Time" and app == "Response":
-                    # Adicionando valores gerados pelo NS3
-                    x = time_resp_ns3
-                    # x = data_size_ns3
-                    # Adicionando valores do trace
-                    y = resp_t_time
-                    # y = data_size
-                if parameter == "Size" and app == "Send":
+                if parameter == "Size":
                     # Adicionando valores gerados pelo NS3
                     x = size_ns3
                     # x = data_size_ns3
                     # Adicionando valores do trace
-                    y = t_size
+    
+                    y = size_trace
                     # y = data_size
-                if parameter == "Time" and app == "Send":
+                if parameter == "Time":
                     # Adicionando valores gerados pelo NS3
                     x = time_ns3
-                    # print(len(x))
-                    # x = list(dict.fromkeys(x))
-                    # print("X around: ", len(x))
+                    # x = data_size_ns3
                     # Adicionando valores do trace
-                    y = t_time
-                    # y = np.around(y, 4)
-                    # print("Original SEND: ", y)
-                    # y = list(dict.fromkeys(y))
-                    # print("Y arround: ",len(y))
+                    y = time_trace
                     # y = data_size
                 
-             
+            
                 # Métodos de comparação dos traces
                 if meth == "qq_e_pp":
                     x_qq_pp = x
@@ -410,102 +264,88 @@ def compare(app_protocol, n_users):
                         fig.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
                         plt.close()
 
-                if meth == "graphical":
-                    x_gr = x
-                    y_gr = y
-                    ######################################################## x = empirico -> ns3
-                    ######################################################## Gerar ECDF
-                    ######################################################## y = função real -> trace real
-                    ######################################################## Normalizar Função
-                    Fe = [] 
+                # if meth == "graphical":
+                #     x_gr = x
+                #     y_gr = y
+                #     ######################################################## x = empirico -> ns3
+                #     ######################################################## Gerar ECDF
+                #     ######################################################## y = função real -> trace real
+                #     ######################################################## Normalizar Função
+                #     Fe = [] 
                     
-                    # Criando ECDFs
+                #     # Criando ECDFs
                     
-                    for i in range(1, len(x_gr)+1):
-                        # ecdf i/(n+1)
-                        Fe.append(i/(len(x_gr)))
-                   
+                #     for i in range(1, len(x_gr)+1):
+                #         # ecdf i/(n+1)
+                #         Fe.append(i/(len(x_gr)))
+                
                     
-                    # Trandformando vetorem em np.arrays()
-                    # x_gr = np.array(Fe)
-                    x_gr_norm = []
-                    for i in range(0, len(x_gr)):
-                        x_gr_norm.append(x_gr[i]/np.sum(x_gr))
-                    x_gr = np.cumsum(x_gr)
+                #     # Trandformando vetorem em np.arrays()
+                #     # x_gr = np.array(Fe)
+                #     x_gr_norm = []
+                #     for i in range(0, len(x_gr)):
+                #         x_gr_norm.append(x_gr[i]/np.sum(x_gr))
+                #     x_gr = np.cumsum(x_gr)
                     
                     
-                    y_gr_norm = []
-                    for i in range(0, len(y_gr)):
-                        y_gr_norm.append(y_gr[i]/np.sum(y_gr))
-                    y_gr = np.cumsum(y_gr)
+                #     y_gr_norm = []
+                #     for i in range(0, len(y_gr)):
+                #         y_gr_norm.append(y_gr[i]/np.sum(y_gr))
+                #     y_gr = np.cumsum(y_gr)
                     
-                        # print("Média: ",np.mean(y_gr))
-                        # print("Atual: ",y_gr[i])
-                        # print("Atual Norm: ",y_gr_norm[i])
+                #         # print("Média: ",np.mean(y_gr))
+                #         # print("Atual: ",y_gr[i])
+                #         # print("Atual Norm: ",y_gr_norm[i])
 
-                    y_gr = np.array(y_gr_norm)
-                    x_gr = np.array(x_gr_norm)
-                    # Ordenando os valores
-                    x_gr.sort()
-                    y_gr.sort()
+                #     y_gr = np.array(y_gr_norm)
+                #     x_gr = np.array(x_gr_norm)
+                #     # Ordenando os valores
+                #     x_gr.sort()
+                #     y_gr.sort()
 
-                    # print("X: ", x_gr)
-                    # print("Y: ", y_gr)
-                    # Tornando os vetores do mesmo tamanho
-                    if len(x_gr) > len(y_gr):
-                        x_gr = x_gr[0:len(y_gr)]
-                    if len(x_gr) < len(y_gr):
-                        y_gr = y_gr[0:len(x_gr)]
+                #     # print("X: ", x_gr)
+                #     # print("Y: ", y_gr)
+                #     # Tornando os vetores do mesmo tamanho
+                #     if len(x_gr) > len(y_gr):
+                #         x_gr = x_gr[0:len(y_gr)]
+                #     if len(x_gr) < len(y_gr):
+                #         y_gr = y_gr[0:len(x_gr)]
                     
-                    # print("X size: ", len(x))
-                    # print("Y size: ", len(y))
-                    # print("X: ", x)
-                    # print("Y: ", y)
+                #     # print("X size: ", len(x))
+                #     # print("Y size: ", len(y))
+                #     # print("X: ", x)
+                #     # print("Y: ", y)
 
-                    # Plotando dados x e y
-                    plt.plot(x_gr,y_gr,"o")
+                #     # Plotando dados x e y
+                #     plt.plot(x_gr,y_gr,"o")
 
-                    # Definindo polinomial de x e y
-                    z = np.polyfit(x_gr, y_gr, 1)
+                #     # Definindo polinomial de x e y
+                #     z = np.polyfit(x_gr, y_gr, 1)
 
-                    # Gerando polinomial de 1d com os dados de z e x 
-                    y_hat = np.poly1d(z)(x_gr)
+                #     # Gerando polinomial de 1d com os dados de z e x 
+                #     y_hat = np.poly1d(z)(x_gr)
 
-                    # Plotando linha tracejada 
-                    plt.plot(x_gr, y_hat, "r--", lw=1)
+                #     # Plotando linha tracejada 
+                #     plt.plot(x_gr, y_hat, "r--", lw=1)
 
-                    # Imprimindo resultados da regressão linear dos dados comparados
-                    text = f"$y={z[0]:0.6f}x{z[1]:+0.6f}$\n$R^2 = {r2_score(y_gr,y_hat):0.6f}$"
-                    plt.gca().text(0.05, 0.95, text,transform=plt.gca().transAxes,
-                        fontsize=12, verticalalignment='top')
-                    # Definindo titulo do gráfico
-                    plt.title('Graphical Method Inference for Real and Simulated Trace '+app+' ('+parameter+')')
-                    plt.xlabel('ECDF of Real Trace Data')
-                    plt.ylabel('Normalize Data of Simulated Trace')
-                    if plot == "show":
-                        plt.show()  
-                    if plot == "save":
-                        plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
-                        plt.close()
+                #     # Imprimindo resultados da regressão linear dos dados comparados
+                #     text = f"$y={z[0]:0.6f}x{z[1]:+0.6f}$\n$R^2 = {r2_score(y_gr,y_hat):0.6f}$"
+                #     plt.gca().text(0.05, 0.95, text,transform=plt.gca().transAxes,
+                #         fontsize=12, verticalalignment='top')
+                #     # Definindo titulo do gráfico
+                #     plt.title('Graphical Method Inference for Real and Simulated Trace '+app+' ('+parameter+')')
+                #     plt.xlabel('ECDF of Real Trace Data')
+                #     plt.ylabel('Normalize Data of Simulated Trace')
+                #     if plot == "show":
+                #         plt.show()  
+                #     if plot == "save":
+                #         plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter, fmt="png",dpi=1000)
+                #         plt.close()
                 if meth == "kstest":  
 
                     x_ks = x
                     y_ks = y
-                    
-                    # plt.plot(np.cumsum(x_ks))
-                    # plt.title("X - NS3 Trace")
-                    # plt.show()
-                    global time_simulate
-                    time_simulate.sort()
-                    np.savetxt("scratch/simulated_trace_dns.txt",time_simulate, delimiter=',', fmt='%f')
-
-                    global dts
-                    global dns
-                    dts.sort()
-                    dns.sort()
-                    np.savetxt("scratch/dns.txt",dns, delimiter=',', fmt='%f')
-                    np.savetxt("scratch/dts.txt",dts, delimiter=',', fmt='%f')
-                    
+                                        
                                         
                     # fig, ax = plt.subplots(1, 1)
                     # ax = sns.distplot(t_time)
@@ -524,106 +364,67 @@ def compare(app_protocol, n_users):
                     t_Fe = x_ks
                     
 
-                    # fig, ax = plt.subplots(1, 1)
-                    # ax = sns.distplot(t_Fe)
-                    # plt.title("X - Simulated Trace")
-                    # plt.show()
-          
-                    # ECDF(Ft)
-
+                    #
+                    # KS TEST
+                    #
+                    # Criando percentil
+                    size = len(y)
+                    # percentile = np.linspace(0,100,size)
+                    # percentile_cut = np.percentile(y, percentile)
+                    
+                    # # Criando CDF da teórica
+                    # Ft = dist.cdf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
                     
                     
-                    # t_Fe = np.cumsum(t_Fe)
-                   
+                    # # Criando CDF Inversa 
+                    # Ft_ = dist.ppf(percentile_cut, *param[:-2], loc=param[-2], scale=param[-1])
                     
+                    # Adicionando dados do trace
+                    # t_Fe = y
 
-                    # print("y_ks: ", y_ks[0:10])
-                    # print("x_ks: ", x_ks[0:10])
-                    # ax = sns.distplot(t_Fe)
-                    # plt.show()
-
-                    # ax = sns.distplot(Ft)
-                    # plt.show()
-
-                    # Ordenando valores 
                     t_Fe = sorted(t_Fe, reverse=True)
                     Ft = sorted(Ft, reverse=True)
-                    
-                    
                     
                     # Definindo mesmo tamanho para os vetores
                     if len(Ft) > len(t_Fe):
                         Ft = Ft[0:len(t_Fe)]
                     if len(Ft) < len(t_Fe):
                         t_Fe = t_Fe[0:len(Ft)]
-                    
-                    t_Fe.sort()
-                    Ft.sort()
-                    
-                    
-                    np.savetxt("scratch/simulated_trace.txt",t_Fe, delimiter=',', fmt='%f')
-                    np.savetxt("scratch/real_trace.txt",Ft, delimiter=',', fmt='%f')
-                    
-                    #
-                    # print("Ft: ", Ft[0:10])
-                    # print("Fe: ", Fe[0:10])
-                    
-                    # plt.plot(np.cumsum(Ft))
-                    # plt.plot(np.cumsum(t_Fe))
-                    # plt.show()
-
-                    # Criando listas para a ecdf
-                    Fe = []
-                    Fe_ = []
-
-                    size = len(t_Fe)
-                    # Criando ECDFs
-                    
-                    # size = 100
-                    for i in range(1,size+1):
-                        # ecdf i-1/n
-                        # print("I:",i)
-                        # print("I-1:",i-1)
-                        # print("I-1/n:",(i-1)/size)
-                        Fe_.append((i-1)/size)
-                        # ecdf i/n
-                        Fe.append(i/size)
-                  
-
-
+                
                     # Ordenando dados
                     t_Fe.sort()
                     Ft.sort()
-                    Fe.sort()
-                    Fe_.sort()
+                    # Ft_.sort()
 
+                    # Criando listas para armazenar as ECDFs
+                    Fe = []
+                    Fe_ = []
                     
+                    # ecdf = np.array([12.0, 15.2, 19.3])  
+                    arr_ecdf = np.empty(size)
+                    arr_ecdf = [id_+1 for id_ in range(size)]
+                    arr_div = np.array(size) 
+                    
+                    # Criando ECDFs
+                    # for i in range(0, size):
+                        # ecdf i-1/n
+                    Fe = (np.true_divide(arr_ecdf, size))
+                
+                    arr_ecdf = np.subtract(arr_ecdf, 1)
 
-           
-
-                    # Trandformando vetorem em np.arrays()
+                    Fe_ = (np.true_divide(arr_ecdf, size))
+                    
+                    # Transformando listas em np.arrays()
                     Fe = np.array(Fe)
                     Fe_ = np.array(Fe_)
                     Ft = np.array(Ft)
-                    t_Fe = np.array(t_Fe)
-
-                    Fe = np.around(Fe,  3)
-                    Fe_ = np.around(Fe_,  3)
-                    Ft = np.around(Ft,  5)
-                    t_Fe = np.around(t_Fe,  5)
-
-
-                    # print("Ft: ", Ft[0:10])
-                    # print("t_Fe: ", t_Fe[0:10])
-                    # print("Fe_: ", Fe_[0:10])
-                    # print("Fe: ", Fe[0:10])
-                    # print("Sub: ", np.subtract(Ft[0:15],t_Fe[0:15]))
-
+                    # Ft_ = np.array(Ft_)
+                    
                     # Inicio cálculo de rejeição
                     #
                     # Ft(t)-FE-(i),FE+(i)-Ft(t)
-                    Ft_Fe_ = np.subtract(Ft, Fe_)
-                    Fe_Ft = np.subtract(Fe, Ft)
+                    Ft_Fe_ = abs(np.subtract(Fe_, Ft))
+                    Fe_Ft = (np.subtract(Fe, Ft))
                     
                     # Max(Ft(t)-FE-(i),FE+(i)-Ft(t))
                     Dobs_max = np.maximum(Ft_Fe_, Fe_Ft)
@@ -632,108 +433,243 @@ def compare(app_protocol, n_users):
                     Dobs = np.max(Dobs_max)
                     #
                     # Fim cálculo de rejeição
-                    # alternative{‘two-sided’, ‘less’, ‘greater’}
-                    # dist_name = getattr(scipy.stats, 'uniform')
-                    # Ft = dist_name.rvs(loc=0, scale=10, size=len(t_Fe))
-                    # Ft.sort()
-                    print("Ft: ",len(Ft))
-                    print("t_Fe: ",len(t_Fe))
-                    
-                    t_Fe = np.around(t_Fe, 2)
-                    Ft = np.around(Ft, 2)
 
-                    np.savetxt("scratch/ALT_simulated_trace.txt", t_Fe, delimiter=',', fmt='%f')
-                    np.savetxt("scratch/ALT_real_trace.txt", Ft, delimiter=',', fmt='%f')
-                    
-                    
-                    
-                    
-                    # Modos disponíveis ['asymp','exact', 'auto']
-                    mode = ['exact']
-                    # Alternativas disponíveis ['two-sided', 'less', 'greater']
-                    alternative = ['less']
-                    for md in mode:
-                        for alt in alternative:
-                            # if size < 10000:
-                            ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode=''+md+'', alternative=''+alt+'')
-                            ks_statistic = np.around(ks_statistic, 2)
-                            p_value = np.around(p_value, 2)
-                            # else:
-                            #     ks_statistic, p_value = stats.ks_2samp(Ft,t_Fe, mode='asymp', alternative='two-sided')
-                                
+                    # ks_statistic, D_critico = stats.ks_2samp(Ft,t_Fe)
+                
+                    rejects, D_critico = ksvalid(size, Dobs, IC)
+                    # rejects, IC, D_critico = ksvalid(size, Dobs)
 
-                            rejects, IC, D_critico = ksvalid(size, ks_statistic)
-                            # rejects, IC, D_critico = ksvalid(size, Dobs)
+                    if ks_first == True:
+                        w = open("/home/carl/New_Results/Files/compare_results_"+parameter+".txt", "w")
+                        w.write('"flow_Trace";"KS-Test";"Rejection"\n')
+                        ks_first = False
+                    else:
+                        w = open("/home/carl/New_Results/Files/compare_results_"+parameter+".txt", "a")
+                        w.write(''+str(proto) + ' ' + str(Dobs) + ' ' + str(rejects) + '\n')
+                    w.close()
 
-                            
-                            # Imprimindo resultados do KS Test
-                            print(" ")
-                            print("KS TEST(",app,"):")
-                            print("Confidence degree: ", IC,"%")
-                            print("D observed: ", Dobs)
-                            print("D observed(two samples): ", ks_statistic)
-                            print("D critical: ", D_critico)
-                            print(rejects, " to  Real Trace (Manual-ks_statistic/D_critico)")
+                    # Plotando resultados do teste KS
+                    if save_Graph == True:
+                        plt.plot(Ft, Fe_, 'o', label='CDF Trace Distribution')
+                        plt.plot(t_Fe, Fe_, 'o', label='CDF NS3 Distribution')
+                        
+                        plt.xlabel('Time (s)')
+                        plt.ylabel('CDF')
+                        
+                        # plt.plot(Ft, Fe, 'o', label='Teorical Distribution')
+                        # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
+                        
+                        # Definindo titulo
+                        plt.title("KS Test of Real and Simulated Trace of "+proto+ "(" + parameter + ")")
+                        plt.legend()
+                        
+                        plt.savefig("/home/carl/New_Results/Graphics/"+case_Study+"_compare_ks_test_"+proto+"_("+parameter+")", fmt="png",dpi=1000)
+                        plt.close()
+                        
+def read_filter(const_Size, type_Size, save_Graph, case_Study):
+                                                      
+ 
+    ns3_ip_df = pd.read_csv("/home/carl/New_Results/Files/ns3_ip.txt", sep=";", names=["protocols","ip_SRC"])
+    # print(ns3_ip_df)
 
-                            a = 1-(IC/100)
-                            
-                            a = np.around(a,5)
+    ns3_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/ns3_"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
+    
+    ns3_df = ns3_df[ns3_df.tcp_Size != 0]
+    ns3_df = ns3_df[ns3_df.udp_Size != 0]
 
-                            if p_value < a:
-                                print("Reject - p-value: ", p_value, " is less wich alpha: ", a," (2samp)")
-                            else:
-                                print("Fails to Reject - p-value: ", p_value, " is greater wich alpha: ", a," (2samp)")
-                            
+    ns3_df = ns3_df.fillna(0)
+    
+    ns3_df['protocols'] = ns3_df.protocols.str.replace('ppp:ip:', '')
 
-                            w = open("../../../Results/Prints/valid-"+validation+"_"+t_net+"_"+app_protocol+"_stats_"+mt_RG+"_"+str(IC)+".txt", "a")
-                            w.write("\nKS TEST("+str(app)+")_"+alt+"_"+md+":"+"\n")
-                            w.write("Confidence degree: "+ str(IC)+"%\n")
-                            w.write("D observed: "+ str(Dobs)+"\n")
-                            w.write("D observed(two samples): "+ str(ks_statistic)+"\n")
-                            w.write("D critical: "+str(D_critico)+"\n")
-                            w.write(str(rejects)+ " to  Real Trace (Manual-ks_statistic/D_critico)\n")
-                            
-                            if p_value < a:
-                                w.write("Reject - p-value: "+ str(p_value)+ " is less wich alpha: "+ str(a)+" (2samp)\n")
-                            else:
-                                w.write("Fails to Reject - p-value: "+ str(p_value)+ " is greater wich alpha: "+ str(a)+" (2samp)\n")
-                            w.close()
-                            # Gerar número aleatório de acordo com a distribuição escolhida e seus parametros.
-                            
-                            # Plotando resultados do teste KS
-                    
-                            plt.plot(Ft, Fe, '-', label='Simulated trace data')
-                            plt.plot(t_Fe, Fe, '-', label='Real trace data')
-                            
-                            
-                            # plt.plot(t_Fe, Ft, 'o', label='Teorical Distribution')
-                            # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
-                            # Definindo titulo
-                            # plt.title("KS test of Real and Simulated Trace of "+app+" ("+parameter+")")
-                            plt.legend(loc='lower right',fontsize=12)
-                            if plot == "show":
-                                plt.show()  
-                            if plot == "save":
-                                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_plot_"+parameter+"_("+alt+"-"+md+")", fmt="png",dpi=1000)
-                                plt.close()
-                            
-                            # Definindo diferença entre traces
-                            diff = Ft - t_Fe
-                            fig, ax = plt.subplots(1, 1)
-                            ax = sns.distplot(diff)
-                            # plt.title("Histogram of differential "+traffic+" ("+parameter+")")
-                            
-                            # plt.hist(diff)
-                            if plot == "show":
-                                plt.show()  
-                            if plot == "save":
-                                plt.savefig("../../../Results/Figures/valid-"+validation+"_"+t_net+"_"+app_protocol+"_"+app+"_"+meth+"_hist_"+parameter, fmt="png",dpi=1000)
-                                plt.close()
-                    
+    for index, row in ns3_df.iterrows():
+        for index_ip, row_ip in ns3_ip_df.iterrows():
+            if row['ip_SRC'] == row_ip['ip_SRC']:
+                ns3_df['protocols'][index] = row_ip['protocols']
+   
 
+    
+    ns3_arr_protocols = list(set(ns3_df["protocols"]))
+    ns3_arr_protocols = np.array(ns3_arr_protocols)
+    
+  
+
+    # Cria valores só pra um valor da coluna 
+    for ns3_proto in ns3_arr_protocols:
+        
+        # trace_df[] = trace_df.loc[trace_df['protocols'] == str(eth:ethertype:ip:tcp)]
+        ns3_data_df = ns3_df[ns3_df['protocols'].str.contains(ns3_proto)]
+        # print(ns3_data_df)
+        if len(ns3_data_df.index) > 2:
+            
+            ns3_ip_proto_df = ns3_df.drop(['time', 'size', 'tcp_Size', 'udp_Size'], axis=1)
+
+            ns3_dst_proto_df = ns3_ip_proto_df.drop(['ip_SRC'], axis=1)
+            ns3_src_proto_df = ns3_ip_proto_df.drop(['ip_DST'], axis=1)
+
+            ns3_dst_proto_df = ns3_dst_proto_df.drop_duplicates()
+            ns3_src_proto_df = ns3_src_proto_df.drop_duplicates()
+            
+
+            ######## Definindo Tempos ######
+
+            ns3_t_Time = np.array(ns3_data_df["time"])
+            ns3_t_Time.sort()
+            
+            ns3_sub = []
+          
+            for i in range(0,len(ns3_t_Time)-1):
+                ns3_sub.append(ns3_t_Time[i+1] - ns3_t_Time[i])
+            
+            # Passando valores resultantes para a variável padrão t_time
+            ns3_t_Time = np.array(ns3_sub)
+            ns3_t_Time = ns3_t_Time.astype(float)
+
+            
+
+            ns3_t_Time = np.delete(ns3_t_Time, np.where(ns3_t_Time == 0))
+            ns3_t_Time.sort()
+
+            # Plot histograma t_time:
+            plot_histogram(ns3_t_Time, save_Graph, "time", case_Study, ns3_proto)
+
+            np.savetxt('/home/carl/New_Results/Files/ns3_'+ns3_proto+'_time.txt', ns3_t_Time, delimiter=',', fmt='%f')
+            
+
+            ############ Definindo Tamanhos #########
+
+            if const_Size == False:
+                # Plot histograma t_time:
+                plot_histogram(ns3_data_df["size"], save_Graph, "size", case_Study, ns3_proto)
+                np.savetxt('/home/carl/New_Results/Files/ns3_'+ns3_proto+'_size.txt', ns3_data_df["size"], delimiter=',', fmt='%f')
+            else:
+                if type_Size == "mean_Trace":
+                    ns3_size = np.mean(ns3_data_df["size"])
+                if type_Size == "const_Value":
+                    ns3_size = 500
+                
+                ns3_arr_Size = np.empty(len(ns3_data_df["size"])-1)
+                ns3_arr_Size = [ns3_size for x in range(len(ns3_data_df["size"]))]
+                
+                np.savetxt('/home/carl/New_Results/Files/ns3_'+ns3_proto+'_size.txt', ns3_arr_Size, delimiter=',', fmt='%f')
+            
+            
+
+            ns3_df = ns3_df[ns3_df.protocols != ns3_proto]
+        else:
+            ns3_arr_protocols = np.delete(ns3_arr_protocols, np.where(ns3_arr_protocols == ns3_proto))
+          
+
+
+
+
+
+    trace_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
+    
+    trace_df = trace_df[trace_df.tcp_Size != 0]
+    trace_df = trace_df[trace_df.udp_Size != 0]
+
+    trace_df = trace_df.fillna(0)
+
+    # print(trace_df)
+    
+    trace_df['protocols'] = trace_df.protocols.str.replace('ethertype:ip:', '')
+    trace_df['protocols'] = trace_df.protocols.str.replace('ethertype:ipv6:', '')
+    trace_df['protocols'] = trace_df.protocols.str.replace('wlan_radio:wlan:', '')
+    
+    
+    arr_protocols = list(set(trace_df["protocols"]))
+    arr_protocols = np.array(arr_protocols)
+
+
+    # Cria valores só pra um valor da coluna 
+    for proto in arr_protocols:
+        
+        # trace_df[] = trace_df.loc[trace_df['protocols'] == str(eth:ethertype:ip:tcp)]
+        data_df = trace_df[trace_df['protocols'].str.contains(proto)]
+        # print(data_df)
+        if len(data_df.index) > 2:
+            
+            ip_proto_df = trace_df.drop(['time', 'size', 'tcp_Size', 'udp_Size'], axis=1)
+
+            dst_proto_df = ip_proto_df.drop(['ip_SRC'], axis=1)
+            src_proto_df = ip_proto_df.drop(['ip_DST'], axis=1)
+
+            dst_proto_df = dst_proto_df.drop_duplicates()
+            src_proto_df = src_proto_df.drop_duplicates()
+            
+
+            ######## Definindo Tempos ######
+
+            t_Time = np.array(data_df["time"])
+            t_Time.sort()
+            # print(t_Time)
+            sub = []
+          
+            for i in range(0,len(t_Time)-1):
+                sub.append(t_Time[i+1] - t_Time[i])
+            
+            # Passando valores resultantes para a variável padrão t_time
+            t_Time = np.array(sub)
+            t_Time = t_Time.astype(float)
+            # print(t_Time)
+            
+
+            t_Time = np.delete(t_Time, np.where(t_Time == 0))
+            t_Time.sort()
+
+            # Plot histograma t_time:
+            plot_histogram(t_Time, save_Graph, "time", case_Study, proto)
+
+            np.savetxt('/home/carl/New_Results/Files/'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
+            
+
+            ############ Definindo Tamanhos #########
+
+            if const_Size == False:
+                # Plot histograma t_time:
+                plot_histogram(data_df["size"], save_Graph, "size", case_Study, proto)
+                np.savetxt('/home/carl/New_Results/Files/'+proto+'_size.txt', data_df["size"], delimiter=',', fmt='%f')
+            else:
+                if type_Size == "mean_Trace":
+                    size = np.mean(data_df["size"])
+                if type_Size == "const_Value":
+                    size = 500
+                
+                arr_Size = np.empty(len(data_df["size"])-1)
+                arr_Size = [size for x in range(len(data_df["size"]))]
+                
+                np.savetxt('/home/carl/New_Results/Files/'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+            
+            
+
+            trace_df = trace_df[trace_df.protocols != proto]
+        else:
+            arr_protocols = np.delete(arr_protocols, np.where(arr_protocols == proto))
+          
+
+    return arr_protocols, ns3_arr_protocols
 
 # Função principal do código
 def main(argv):
-    compare()
+
+    # Determina se os tamanhos de pacotes serão constantes caso True ou se seguirão o padrão do trace caso False
+    const_Size = sys.argv[1]
+    # Tipo de tamanho de pacote: "const_Value"(Valor específico) | "mean_Trace"(Usa a média do tamanho dos pacotes do trace)
+    type_Size = sys.argv[2]
+    save_Graph = sys.argv[3]
+    
+    # parameters = ["size", "time"]
+    case_Study = sys.argv[4]
+    # "99.80%";"99.85%";"99.90%";"99.95%";"99.99%"
+    IC = sys.argv[5]
+    IC = float(IC)
+
+    save_Graph = eval(save_Graph)
+    const_Size = eval(const_Size)
+    # Chamada da função de filtro do trace e criação de arquivos com os parametros da rede
+    arr_protocols, ns3_arr_protocols = read_filter(const_Size, type_Size, save_Graph, case_Study)
+    
+    compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC)
+
 if __name__ == '__main__':
     main(sys.argv)

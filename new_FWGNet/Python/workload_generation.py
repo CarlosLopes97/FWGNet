@@ -439,25 +439,6 @@ def tcdf(y, parameter, case_Study, save_Graph, IC, proto, tcdf_First):
             w = open("/home/carl/New_Results/Files/tcdf_results_"+parameter+".txt", "a")
             w.write(''+str(proto) + ' ' + str(dist_names) + ' ' + str(ks_values) + ' ' + str(chi_square) + ' ' + str(rejects) + '\n')
         w.close()
-        # Imprimindo resultados do KS Test
-        # print(" ")
-        # print("KS TEST:")
-        # print("Confidence degree: ", IC,"%")
-        # print("D observed: ", Dobs)
-        # # print("D observed(two samples): ", ks_statistic)
-        # print("D critical: ", D_critico)
-        # print(rejects, " to  Real Trace (Manual-ks_statistic/D_critico)")
-
-        # a = 1-(IC/100)
-        
-        # a = np.around(a,4)
-
-        # if D_critico < a:
-        #     print("Reject - p-value: ", D_critico, " is less wich alpha: ", a," (2samp)")
-        # else:
-        #     print("Fails to Reject - p-value: ", D_critico, " is greater wich alpha: ", a," (2samp)")
-        
-        # print(Fe_)
 
         # Plotando resultados do teste KS
         if save_Graph == True:
@@ -606,7 +587,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
     arr_protocols = list(set(txt_df["protocols"]))
     arr_protocols = np.array(arr_protocols)
     
-    print(arr_protocols)
+    # print(arr_protocols)
 
     first_Ip = True
     first_Time = True
@@ -705,13 +686,13 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
 
             txt_df = txt_df[txt_df.protocols != proto]
         else:
-            print(proto)
+            # print(proto)
             # arr_protocols = np.array([1,2,3,4,5])
             # index = np.argwhere(arr_protocols == proto)
             # print(index)
             # np.delete(arr_protocols, index)
             arr_protocols = np.delete(arr_protocols, np.where(arr_protocols == proto))
-            print(arr_protocols)
+            # print(arr_protocols)
 
     return arr_protocols
    
@@ -720,15 +701,19 @@ def main(argv):
     #
     # Filtro e criação de arquivos
     #
-    # Determina se os tamanhos de pacotes serão constantes caso True ou se seguirão o padrão do trace caso False
-    const_Size = True
+    # Determina se os tamanhos de pacotes serão constantes caso True ou se seguirão o padrão do trace caso False    
+    const_Size = sys.argv[1]
     # Tipo de tamanho de pacote: "const_Value"(Valor específico) | "mean_Trace"(Usa a média do tamanho dos pacotes do trace)
-    type_Size = "const_Value"
-    save_Graph = True
+    type_Size = sys.argv[2]
+    save_Graph = sys.argv[3]
+    
+    save_Graph = eval(save_Graph)
+    const_Size = eval(const_Size)
     # parameters = ["size", "time"]
-    case_Study = "http"
+    case_Study = sys.argv[4]
     # "99.80%";"99.85%";"99.90%";"99.95%";"99.99%"
-    IC=95.0
+    IC = sys.argv[5]
+    IC = float(IC)
     # Chamada da função de filtro do trace e criação de arquivos com os parametros da rede
     arr_protocols = read_filter(const_Size, type_Size, save_Graph, case_Study)
 
