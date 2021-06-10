@@ -261,46 +261,29 @@ MyApp::StopApplication (void)
 void
 MyApp::SendPacket (void)
 {
-  // std::cout<<"3"<<std::endl;
-
+  // Se o número de linhas for maior que 1
   if (stod(m_n_rows_Size[m_id_arrays][1]) > 1)
   {
+    // Variável auxiliar recebe o numero de linhas
     m_aux_n_Size = stod(m_n_rows_Size[m_id_arrays][1])-1;
+    // O tamanho do pacote é definido
     m_size_pckts = std::stod(m_arr_Sizes[m_aux_n_Size][m_id_arrays]);
+    // O número da linha decrementa 1
     m_n_rows_Size[m_id_arrays][1] = std::to_string(stod(m_n_rows_Size[m_id_arrays][1])-1); 
+    // Cria-se um pacote com o tamanho definido
     Ptr<Packet> packet = Create<Packet> (m_size_pckts);
+    // Envia o pacote para o socket
     m_socket->Send (packet);
   }else{
-    // std::cout<<" "<<std::endl;
-    // std::cout<<"SUM CONTROL - PROTO: "<< m_proto[m_id_arrays] <<std::endl;
+    // Quando a o número de pacotes é menor que 1 reduz o total da somatória
     m_sum_packets = m_sum_packets - stod(m_n_packets[m_id_arrays][1]);
-    // std::cout<<"SUM CONTROL - SUM: "<<m_sum_packets <<std::endl;
   }
-
-  // std::cout<<" "<<std::endl;
-  // std::cout<<"SEND ID: "<<m_id_arrays<<std::endl;
-  // std::cout<<"SEND SUM "<<m_sum_packets<<std::endl;
-  // std::cout<<"SEND PROTO: "<<m_proto[m_id_arrays]<<std::endl;
-  // std::cout<<"SEND APP_PROTO: "<< m_app_proto_ip[m_id_arrays][0]<<std::endl;
-  // std::cout<<"SEND SENT PACKETS "<<m_packetsSent<<std::endl;
-  // std::cout<<"SEND PACKETS ID SIZE "<<stod(m_n_rows_Size[m_id_arrays][1])<<std::endl;
-  
-  // Ptr<Packet> packet = Create<Packet> (m_packetSize);
-  
-  // if (m_count <= m_sum_packets){
-  //   // std::cout<<"COUNT "<<m_count<<std::endl;
-    
-  //   m_count++;
-    
-  // }else{
-  //   m_packetsSent = m_sum_packets;
-
-  // }
-
+  // Se a somatória é maior que a quantidade de pacotes enviados então segue-se para Schedule
   if (++m_packetsSent < m_sum_packets)
   {  
     ScheduleTx ();
   }else{
+    // Finaliza a aplicação
     StopApplication ();
   }
 }
@@ -308,53 +291,33 @@ MyApp::SendPacket (void)
 void
 MyApp::ScheduleTx (void)
 {
-// std::cout<<"4"<<std::endl;
+  // Se a aplicação está executando
   if (m_running)
     {       
+      // Se o número de linhas for maior que 1
       if (stod(m_n_rows_Time[m_id_arrays][1]) > 1)
       {
-        
+        // Variável auxiliar recebe o numero de linhas
         m_aux_n_Time = (stod(m_n_rows_Time[m_id_arrays][1])-1);
+        // O intervalo é definido
         m_interval = stod(m_arr_Times[m_aux_n_Time][m_id_arrays]);
+        // O número da linha decrementa 1
         m_n_rows_Time[m_id_arrays][1] = std::to_string(stod(m_n_rows_Time[m_id_arrays][1])-1);
-        // std::cout<<" "<<std::endl;
-        // std::cout<<"Schedule ID: "<<m_id_arrays<<std::endl;
-        // std::cout<<"Schedule m_n_rows_Time: "<<m_n_rows_Time[m_id_arrays][1]<<std::endl;
-        // std::cout<<"Schedule m_aux_n_Time: "<<m_aux_n_Time<<std::endl;
-        // std::cout<<"Schedule m_arr_Times: "<<m_arr_Times[m_aux_n_Time][m_id_arrays]<<std::endl;
-
-        // std::cout<<" "<<std::endl;
-        // std::cout<<"Schedule ID: "<<m_id_arrays<<std::endl;
-        // std::cout<<"Schedule SUM "<<m_sum_packets<<std::endl;
-        // std::cout<<"Schedule PROTO: "<<m_proto[m_id_arrays]<<std::endl;
-        // std::cout<<"Schedule APP_PROTO: "<< m_app_proto_ip[m_id_arrays][0]<<std::endl;
-        // std::cout<<"Schedule SENT PACKETS "<<m_packetsSent<<std::endl;
-        // std::cout<<"Schedule PACKETS ID - TIME "<<stod(m_n_rows_Time[m_id_arrays][1])<<std::endl;
-        time_s = m_interval + time_s;
-        // std::cout<<"TimeSimulation: "<<time_s<<std::endl;
+        // Defini-se o tNext
         Time tNext (Seconds (m_interval));
+        // Envia um evento
         m_sendEvent = Simulator::Schedule (tNext, &MyApp::SendPacket, this);
       }else{
-
-        if (m_id_arrays >= m_n_row-1)
+        // Retorna à função de SendPackets
+        SendPacket();
+      }
+      // Incrementa e decrementa o id dos arrays
+      if (m_id_arrays >= m_n_row-1)
           {
             m_id_arrays = 0;
           }else
           {
             m_id_arrays++;
           }
-        SendPacket();
-      }
-
-      
-        
-
-
-
-      
-  
-        // Time tNext (Seconds (m_packetSize * 8 / static_cast<double> (m_dataRate.GetBitRate ())));
-        
-      
     }
 }
