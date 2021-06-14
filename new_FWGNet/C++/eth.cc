@@ -35,7 +35,7 @@ using namespace ns3;
 
 
 
-NS_LOG_COMPONENT_DEFINE ("P2PScriptExample");
+NS_LOG_COMPONENT_DEFINE ("CSMAScriptExample");
 // Função para geração de arrays 2d 
 std::string** create_mat(int rows, int columns)
 {
@@ -64,10 +64,10 @@ std::string* create_arr(int rows)
 }
 
 // Função para leitura de arquivos
-void read_files (std::string** proto_ip, std::string* proto, std::string** n_rows_Size, std::string** n_rows_Time, std::string** n_packets, int n_param ,int n_file_param)
+void read_files (std::string** proto_ip, std::string* proto, std::string** n_rows_Size, std::string** n_rows_Time, std::string** n_packets, int n_param ,int n_file_param, std::string case_Study)
 {
   // Adicionando diretório do arquivo proto_ips.txt a uma variável
-  FILE* f = fopen("/home/carl/New_Results/Files/proto_ips.txt", "r");
+  FILE* f = fopen("/home/carl/New_Results/Files/"+case_Study.c_str()+"_proto_ips.txt", "r");
   
   // Se encontrar falha ao abrir arquivo
   if(f == NULL)
@@ -117,7 +117,7 @@ void read_files (std::string** proto_ip, std::string* proto, std::string** n_row
 
   
   // Adicionando diretório do arquivo list_tr_size.txt a uma variável
-  FILE* fS = fopen("/home/carl/New_Results/Files/list_tr_size.txt", "rb");
+  FILE* fS = fopen("/home/carl/New_Results/Files/"+case_Study.c_str()++"_list_tr_size.txt", "rb");
   
   // FILE* f = fopen("data.txt", "r");
   // Se encontrar falha ao abrir arquivo
@@ -165,7 +165,7 @@ void read_files (std::string** proto_ip, std::string* proto, std::string** n_row
   }
 
   // Adicionando diretório do arquivo list_tr_time.txt a uma variável
-  FILE* fT = fopen("/home/carl/New_Results/Files/list_tr_time.txt", "r");
+  FILE* fT = fopen("/home/carl/New_Results/Files/"+case_Study.c_str()++"_list_tr_time.txt", "r");
   
   // Se encontrar falha ao abrir arquivo
   if(fT == NULL) 
@@ -318,6 +318,7 @@ main (int argc, char *argv[])
   
   std::string rate = "500kb/s";
   std::string lat = "2ms";
+  std::string case_Study = "0";
 
   // Chamando variáveis do shell script
   CommandLine cmd;
@@ -327,6 +328,7 @@ main (int argc, char *argv[])
   cmd.AddValue ("str_verbose","verbose ativado", str_verbose);
   cmd.AddValue ("rate","Taxa", rate);
   cmd.AddValue ("lat","latencia", lat);
+  cmd.AddValue ("case_Study","latencia", case_Study);
   cmd.Parse (argc, argv);
   
   // Convertendo string para int
@@ -362,7 +364,7 @@ main (int argc, char *argv[])
   std::size_t found = 0;
   
   // Chamando função que lê arquivos das variáveis aleatórias
-  read_files(proto_ip, proto, n_rows_Size, n_rows_Time, n_packets, n_param, n_file_param);
+  read_files(proto_ip, proto, n_rows_Size, n_rows_Time, n_packets, n_param, n_file_param, case_Study);
   
 
   // Percorre a quantidade de protocolos
@@ -497,7 +499,7 @@ main (int argc, char *argv[])
     // O método de parada é a quiantidade de pacotes enviados
     // sinkApps1.Stop (Seconds (time_stop_simulation));
 
-    std::ofstream myfile_ip_1("/home/carl/New_Results/Files/ns3_ip.txt");
+    std::ofstream myfile_ip_1("/home/carl/New_Results/Files/"+case_Study.c_str()++"_ns3_ip.txt");
     if (myfile_ip_1.is_open()){
       myfile_ip_1 << proto[0] + ";" + "10.1.1."+std::to_string(1) + "\n";
       myfile_ip_1 << proto[1] + ";" + "10.1.1."+std::to_string(2) + "\n";
@@ -537,7 +539,7 @@ main (int argc, char *argv[])
     
   }
   // Criando arquivo de trace
-  p2p.EnablePcapAll ("p2p");
+  p2p.EnablePcapAll (""+case_Study+"");
 
 
   Simulator::Run ();

@@ -99,7 +99,8 @@ def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
     for proto in ns3_arr_protocols:
         
         # Adiciona à variável os tempos da simulação
-        time_ns3 = np.loadtxt("/home/carl/New_Results/Files/ns3_"+proto+"_time.txt", usecols=0)
+                                                            
+        time_ns3 = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_ns3_"+proto+"_time.txt", usecols=0)
         # Adiciona os tempos a um dataframe
         time_ns3_df = pd.DataFrame(data=time_ns3,columns=["Time"])
         
@@ -110,7 +111,7 @@ def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
         time_ns3 = time_ns3.astype(float)
 
         # Adiciona à variável os tamanhos de pacotes da simulação
-        size_ns3 = np.loadtxt("/home/carl/New_Results/Files/ns3_"+proto+"_size.txt", usecols=0)
+        size_ns3 = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_ns3_"+proto+"_size.txt", usecols=0)
         
         # Adiciona os tamanhos de pacotes a um dataframe
         size_ns3_df = pd.DataFrame(data=size_ns3,columns=["Size"])
@@ -123,7 +124,7 @@ def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
 
 
         # Adiciona à variável os tempos do trace real
-        time_trace = np.loadtxt("/home/carl/New_Results/Files/"+proto+"_time.txt", usecols=0)
+        time_trace = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_"+proto+"_time.txt", usecols=0)
        
         # Adiciona os tempos a um dataframe
         time_trace_df = pd.DataFrame(data=time_trace,columns=["Time"])
@@ -136,7 +137,7 @@ def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
 
 
         # Adiciona à variável os tamanhos de pacotes do trace real
-        size_trace = np.loadtxt("/home/carl/New_Results/Files/"+proto+"_size.txt", usecols=0)
+        size_trace = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_"+proto+"_size.txt", usecols=0)
         
         # Adiciona os tamanhos de pacotes a um dataframe
         time_trace_df = pd.DataFrame(data=time_trace,columns=["Size"])
@@ -355,12 +356,12 @@ def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
                     # Caso seja a primeira analise 
                     if ks_first == True:
                         # Abrindo arquido e sobrescrevendo linha
-                        w = open("/home/carl/New_Results/Files/compare_results_"+parameter+".txt", "w")
+                        w = open("/home/carl/New_Results/Files/"+case_Study+"_compare_results_"+parameter+".txt", "w")
                         w.write('"flow_Trace";"KS-Test";"Rejection"\n')
                         ks_first = False
                     else:
                         # Concatenando linha no arquivo
-                        w = open("/home/carl/New_Results/Files/compare_results_"+parameter+".txt", "a")
+                        w = open("/home/carl/New_Results/Files/"+case_Study+"_compare_results_"+parameter+".txt", "a")
                         w.write(''+str(proto) + ' ' + str(Dobs) + ' ' + str(rejects) + '\n')
                     w.close()
 
@@ -474,10 +475,10 @@ def compare(ns3_arr_protocols, case_Study, const_Size, save_Graph, IC):
 def read_filter(const_Size, type_Size, save_Graph, case_Study):
                                                       
     # Definindo Dataframe com dados de ip e protocolos do arquivo de trace filtrado 
-    ns3_ip_df = pd.read_csv("/home/carl/New_Results/Files/ns3_ip.txt", sep=";", names=["protocols","ip_SRC"])
+    ns3_ip_df = pd.read_csv("/home/carl/New_Results/Files/"+case_Study+"_ns3_ip.txt", sep=";", names=["protocols","ip_SRC"])
 
     # Definindo Dataframe com dados do arquivo de trace filtrado 
-    ns3_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/ns3_"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
+    ns3_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_ns3_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
     # Removendo linhas com tamanho igual a 0
     ns3_df = ns3_df[ns3_df.tcp_Size != 0]
     ns3_df = ns3_df[ns3_df.udp_Size != 0]
@@ -509,6 +510,9 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             ######## Definindo Tempos ######
             # Definindo variável que contem os tempos do protocolo
             ns3_t_Time = np.array(ns3_data_df["time"])
+            
+            # Limitando casa decimais
+            ns3_t_Time = np.around(ns3_t_Time, 4)
             # Ordenando valores da variável
             ns3_t_Time.sort()
  
@@ -531,7 +535,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             # Plot histograma t_time:
             plot_histogram(ns3_t_Time, save_Graph, "time", case_Study, ns3_proto)
             # Salvando t_Time em um arquivo
-            np.savetxt('/home/carl/New_Results/Files/ns3_'+ns3_proto+'_time.txt', ns3_t_Time, delimiter=',', fmt='%f')
+            np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_ns3_'+ns3_proto+'_time.txt', ns3_t_Time, delimiter=',', fmt='%f')
             
 
             ############ Definindo Tamanhos #########
@@ -540,7 +544,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
                 # Plot histograma t_time:
                 plot_histogram(ns3_data_df["size"], save_Graph, "size", case_Study, ns3_proto)
                 # Salvando tamanhos em arquivo
-                np.savetxt('/home/carl/New_Results/Files/ns3_'+ns3_proto+'_size.txt', ns3_data_df["size"], delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_ns3_'+ns3_proto+'_size.txt', ns3_data_df["size"], delimiter=',', fmt='%f')
             else:
                 # Definindo como será o tamanho dos pacotes
                 # Definição de type_Size pela média
@@ -553,7 +557,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
                 ns3_arr_Size = np.empty(len(ns3_data_df["size"])-1)
                 ns3_arr_Size = [ns3_size for x in range(len(ns3_data_df["size"]))]
                 # Salvando tamanhos em arquivo
-                np.savetxt('/home/carl/New_Results/Files/ns3_'+ns3_proto+'_size.txt', ns3_arr_Size, delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_ns3_'+ns3_proto+'_size.txt', ns3_arr_Size, delimiter=',', fmt='%f')
             
             
             # Removendo proto utilizado a cada rodada do "for" 
@@ -569,11 +573,20 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
     # Removendo linhas com tamanho igual a 0
     trace_df = trace_df[trace_df.tcp_Size != 0]
     trace_df = trace_df[trace_df.udp_Size != 0]
+
+    # Removendo strings grandes da coluna "protocols"
+    trace_df['protocols'] = trace_df['protocols'].str.split(':x509sat').str[0]
+
     # Atribuindo zeros para valores com NaN
     trace_df = trace_df.fillna(0)
 
     # Removendo prefixo dos protocolos
+    trace_df['protocols'] = trace_df.protocols.str.replace('ethertype:ip:', '')
+    trace_df['protocols'] = trace_df.protocols.str.replace('ethertype:ipv6:', '')
+    trace_df['protocols'] = trace_df.protocols.str.replace('wlan_radio:wlan:', '')
     trace_df['protocols'] = trace_df.protocols.str.replace('ppp:ip:', '')
+    trace_df['protocols'] = trace_df.protocols.str.replace('raw:ip:', '')
+
 
     # Criando lista com protocolos
     trace_arr_protocols = list(set(trace_df["protocols"]))
@@ -591,6 +604,8 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             ######## Definindo Tempos ######
             # Definindo variável que contem os tempos do protocolo
             trace_t_Time = np.array(trace_data_df["time"])
+            # Limitando casa decimais
+            trace_t_Time = np.around(trace_t_Time, 4)
             # Ordenando valores da variável
             trace_t_Time.sort()
  
@@ -613,7 +628,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             # Plot histograma t_time:
             plot_histogram(trace_t_Time, save_Graph, "time", case_Study, trace_proto)
             # Salvando t_Time em um arquivo
-            np.savetxt('/home/carl/New_Results/Files/'+trace_proto+'_time.txt', trace_t_Time, delimiter=',', fmt='%f')
+            np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_'+trace_proto+'_time.txt', trace_t_Time, delimiter=',', fmt='%f')
             
 
             ############ Definindo Tamanhos #########
@@ -622,7 +637,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
                 # Plot histograma t_time:
                 plot_histogram(trace_data_df["size"], save_Graph, "size", case_Study, trace_proto)
                 # Salvando tamanhos em arquivo
-                np.savetxt('/home/carl/New_Results/Files/'+trace_proto+'_size.txt', trace_data_df["size"], delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_'+trace_proto+'_size.txt', trace_data_df["size"], delimiter=',', fmt='%f')
             else:
                 # Definindo como será o tamanho dos pacotes
                 # Definição de type_Size pela média
@@ -635,7 +650,7 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
                 trace_arr_Size = np.empty(len(trace_data_df["size"])-1)
                 trace_arr_Size = [trace_size for x in range(len(trace_data_df["size"]))]
                 # Salvando tamanhos em arquivo
-                np.savetxt('/home/carl/New_Results/Files/trace_'+trace_proto+'_size.txt', trace_arr_Size, delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_trace_'+trace_proto+'_size.txt', trace_arr_Size, delimiter=',', fmt='%f')
             
             
             # Removendo proto utilizado a cada rodada do "for" 

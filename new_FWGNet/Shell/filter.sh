@@ -25,9 +25,9 @@ then
     # Habilitando permissões ao arquivo gerado
     sudo chmod 777 ${dir_tr_filter}${case_Study}_trace.txt
     # Preparando arquivo para ser legível como DataFrame
-    sudo sed -i ':a;N;$!ba;s/\n/"\n"/g' "${dir_tr_filter}ns3_${case_Study}_trace.txt"
-    sudo sed -i ':a;N;$!ba;s/\t/";"/g' "${dir_tr_filter}ns3_${case_Study}_trace.txt"
+    sudo sed -i ':a;N;$!ba;s/\n/"\n"/g' "${dir_tr_filter}${case_Study}_ns3_trace.txt"
+    sudo sed -i ':a;N;$!ba;s/\t/";"/g' "${dir_tr_filter}${case_Study}_ns3_trace.txt"
     # Adicionando aspas no começo e no final do arquivo
-    sudo sed -i '1s/^/"/' "${dir_tr_filter}ns3_${case_Study}_trace.txt"
-    sudo sed -i '${s/$/"/}' "${dir_tr_filter}ns3_${case_Study}_trace.txt"
+    sudo sed -i '1s/^/"/' "${dir_tr_filter}${case_Study}_ns3_trace.txt"
+    sudo sed -i '${s/$/"/}' "${dir_tr_filter}${case_Study}_ns3_trace.txt"
 fi

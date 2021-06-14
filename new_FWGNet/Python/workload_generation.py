@@ -413,12 +413,12 @@ def tcdf(y, parameter, case_Study, save_Graph, IC, proto, tcdf_First):
         # Caso seja a primeira analise 
         if tcdf_First == True:
             # Abrindo arquido e sobrescrevendo linha
-            w = open("/home/carl/New_Results/Files/tcdf_results_"+parameter+".txt", "w")
+            w = open("/home/carl/New_Results/Files/"+case_Study+"_tcdf_results_"+parameter+".txt", "w")
             w.write('"flow_Trace";"Distributions";"KS-Test";"Chi-Square";"Rejection"\n')
             tcdf_First = False
         else:
             # Concatenando linha no arquivo
-            w = open("/home/carl/New_Results/Files/tcdf_results_"+parameter+".txt", "a")
+            w = open("/home/carl/New_Results/Files/"+case_Study+"_tcdf_results_"+parameter+".txt", "a")
             w.write(''+str(proto) + ' ' + str(dist_names) + ' ' + str(ks_values) + ' ' + str(chi_square) + ' ' + str(rejects) + '\n')
         w.close()
 
@@ -435,7 +435,7 @@ def tcdf(y, parameter, case_Study, save_Graph, IC, proto, tcdf_First):
                 plt.xlabel('Time (s)')
 
             plt.ylabel('CDF')
-            
+
             # plt.plot(Ft, Fe, 'o', label='Teorical Distribution')
             # plt.plot(t_Fe, Fe, 'o', label='Empirical Distribution')
             
@@ -543,13 +543,17 @@ def ecdf(y, parameter, proto):
 
 
 # Função de definição de filtros dos arquivos
-def read_filter(const_Size, type_Size, save_Graph, case_Study):
+def read_filter(const_Size, type_Size, save_Graph, case_Study, type_Topol):
     
     # Definindo Dataframe com dados do arquivo de trace filtrado                                                 
     txt_df = pd.read_csv("/home/carl/New_Results/Filter_Traces/"+case_Study+"_trace.txt", sep=";", names=["ip_SRC","ip_DST","time","size","protocols","tcp_Size","udp_Size"])
     # Removendo linhas com tamanho igual a 0
     txt_df = txt_df[txt_df.tcp_Size != 0]
     txt_df = txt_df[txt_df.udp_Size != 0]
+    
+    # Removendo strings grandes da coluna "protocols"
+    txt_df['protocols'] = txt_df['protocols'].str.split(':x509sat').str[0]
+
     # Atribuindo zeros para valores com NaN
     txt_df = txt_df.fillna(0)
 
@@ -557,12 +561,13 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
     txt_df['protocols'] = txt_df.protocols.str.replace('ethertype:ip:', '')
     txt_df['protocols'] = txt_df.protocols.str.replace('ethertype:ipv6:', '')
     txt_df['protocols'] = txt_df.protocols.str.replace('wlan_radio:wlan:', '')
+    txt_df['protocols'] = txt_df.protocols.str.replace('raw:ip:', '')
     
     # Criando lista com protocolos
     arr_protocols = list(set(txt_df["protocols"]))
     # Convertendo lista para numpy array
     arr_protocols = np.array(arr_protocols)
-    
+
     # Definindo variáveis para criação de arquivos
     first_Ip = True
     first_Time = True
@@ -592,19 +597,22 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             # Se primeira entrada no arquivo
             if first_Ip == True:
                 # Sobrescreve dados do arquivo
-                w = open("/home/carl/New_Results/Files/proto_ips.txt", "w") 
+                w = open("/home/carl/New_Results/Files/"+case_Study+"_proto_ips.txt", "w") 
                 w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
                 first_Ip = False
             else:
                 # Concatena dados no arquivo
-                w = open("/home/carl/New_Results/Files/proto_ips.txt", "a")
+                w = open("/home/carl/New_Results/Files/"+case_Study+"_proto_ips.txt", "a")
                 w.write(''+str(proto) + ' ' + str(count_ip_SRC) + ' ' + str(count_ip_DST) + '\n')
             w.close()
             
             # Definindo variável que contem os tempos do protocolo
             t_Time = np.array(data_df["time"])
+            
+            
             # Ordenando valores da variável
             t_Time.sort()
+            
             
             # Criando variável auxiliar para subtração dos valores
             sub = []
@@ -618,33 +626,42 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
             t_Time = t_Time.astype(float)           
             # Removendo valores igual a zero
             t_Time = np.delete(t_Time, np.where(t_Time == 0))
+
+            # Limitando casa decimais
+            t_Time = np.around(t_Time, 4)
+
             # Ordenando valores
             t_Time.sort()
+
+            print("Time: ",proto)
+            print(len(t_Time))
 
             # Plot histograma t_time:
             plot_histogram(t_Time, save_Graph, "time", case_Study, proto)
             
             # Salvando t_Time em um arquivo
-            np.savetxt('/home/carl/New_Results/Files/'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
+            np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_'+proto+'_time.txt', t_Time, delimiter=',', fmt='%f')
             
             # Criando arquivo com quantidade de tempos de cada protocolo
             if first_Time == True:
                 # Sobrescrevendo dados do arquivo
-                w_time = open("/home/carl/New_Results/Files/list_tr_time.txt", "w")
+                w_time = open("/home/carl/New_Results/Files/"+case_Study+"_list_tr_time.txt", "w")
                 w_time.write(''+str(proto) + ' ' + str(len(t_Time)) + '\n')
                 first_Time = False
         
             else:
                 # Concatenando dados no arquivo
-                w_time = open("/home/carl/New_Results/Files/list_tr_time.txt", "a")
+                w_time = open("/home/carl/New_Results/Files/"+case_Study+"_list_tr_time.txt", "a")
                 w_time.write(''+str(proto) + ' ' + str(len(t_Time)) + '\n')
             w_time.close()
 
+            print("Size: ",proto)
+            print(len(data_df["size"]))
             # Se o tamanho dos pacotes não é constante
             if const_Size == False:
                 # Plot histograma de size:
                 plot_histogram(data_df["size"], save_Graph, "size", case_Study, proto)
-                np.savetxt('/home/carl/New_Results/Files/'+proto+'_size.txt', data_df["size"], delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_'+proto+'_size.txt', data_df["size"], delimiter=',', fmt='%f')
             else:
                 # Definindo como será o tamanho dos pacotes
                 # Definição de type_Size pela média
@@ -657,19 +674,19 @@ def read_filter(const_Size, type_Size, save_Graph, case_Study):
                 arr_Size = np.empty(len(data_df["size"])-1)
                 arr_Size = [size for x in range(len(data_df["size"]))]
                 # Salvando tamanhos em arquivo
-                np.savetxt('/home/carl/New_Results/Files/'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_'+proto+'_size.txt', arr_Size, delimiter=',', fmt='%f')
             
             
             # Salvando quantidade de tamanhos em arquivo
             if first_Size == True:
                 # Sobrescreve dados do arquivo
-                w_size = open("/home/carl/New_Results/Files/list_tr_size.txt", "w")
+                w_size = open("/home/carl/New_Results/Files/"+case_Study+"_list_tr_size.txt", "w")
                 w_size.write(''+str(proto) + ' ' + str(len(data_df["size"].index)) + '\n')
                 first_Size = False
         
             else:
                 # Concatena dados no arquivo
-                w_size = open("/home/carl/New_Results/Files/list_tr_size.txt", "a")
+                w_size = open("/home/carl/New_Results/Files/"+case_Study+"_list_tr_size.txt", "a")
                 w_size.write(''+str(proto) + ' ' + str(len(data_df["size"].index)) + '\n')
             w_size.close()
             
@@ -700,8 +717,9 @@ def main(argv):
     IC = sys.argv[5]
     # Convertendo de string para float
     IC = float(IC)
+    type_Topol = sys.argv[6]
     # Chamada da função de filtro do trace e criação de arquivos com os parametros da rede
-    arr_protocols = read_filter(const_Size, type_Size, save_Graph, case_Study)
+    arr_protocols = read_filter(const_Size, type_Size, save_Graph, case_Study, type_Topol)
 
     #
     # Criação das variáveis aleatórias
@@ -723,7 +741,7 @@ def main(argv):
             # Definindo variável auxiliar
             aux_Packet = 0
             # Abrindo arquivo de gerado anteriormente
-            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+proto+"_"+parameter+".txt", usecols=0)
+            filter_Trace = np.loadtxt("/home/carl/New_Results/Files/"+case_Study+"_"+proto+"_"+parameter+".txt", usecols=0)
             # Convertendo arquivo para numpy array
             filter_Trace = np.array(filter_Trace)
             # Obtendo quantidade de linhas do arquivo
@@ -735,7 +753,7 @@ def main(argv):
                 # Chamando a função PD() e retornando valor gerado para uma variável auxiliar
                 aux_Packet = PD(parameter, const_Size, size_Trace)
                 # Salvando arquivos de variáveis aleatórias
-                np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+                np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
             
             if parameter == "time" or const_Size == False:
                 # Condição de escolha do método por distribuições teórica equivalentes aos dados do trace
@@ -748,7 +766,7 @@ def main(argv):
                     # Chamando a função tcdf_generate e retornando valor gerado para uma variável auxiliar
                     aux_Packet = tcdf_generate(dist_name, loc, scale, arg, parameter, len(filter_Trace))
                     # Salvando arquivos de variáveis aleatórias
-                    np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+                    np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
             
 
                 # Condição de escolha do método pela distribuição empírica dos dados do trace
@@ -756,7 +774,7 @@ def main(argv):
                     # Chamando a função ecdf e retornando valor gerado para uma variável auxiliar
                     aux_Packet = ecdf(filter_Trace, parameter, proto)
                     # Salvando arquivos de variáveis aleatórias
-                    np.savetxt('/home/carl/New_Results/Files/RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
+                    np.savetxt('/home/carl/New_Results/Files/'+case_Study+'_RV_'+mt_RG+'_'+proto+'_'+parameter+'.txt', aux_Packet, delimiter=',', fmt='%f')
             
                         
 if __name__ == '__main__':
